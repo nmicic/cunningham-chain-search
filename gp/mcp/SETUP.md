@@ -14,7 +14,7 @@ Provides Cunningham Chain analysis, search, safe prime generation, and raw GP ac
 ## Quick Start (Local / stdio)
 
 ```bash
-cd cc-constructor-current/scripts/mcp
+cd gp/mcp
 
 # 1. Check environment
 ./mcp.sh doctor
@@ -34,7 +34,7 @@ After `register`, restart Claude Code — the cc-math tools will appear automati
 ## Manual Setup (if mcp.sh doesn't suit your needs)
 
 ```bash
-cd cc-constructor-current/scripts/mcp
+cd gp/mcp
 npm install --production
 ```
 
@@ -45,7 +45,7 @@ Add to `.claude/settings.json` (use absolute paths):
   "mcpServers": {
     "cc-math": {
       "command": "node",
-      "args": ["/full/path/to/cc-constructor-current/scripts/mcp/cc_math_server.js"]
+      "args": ["/full/path/to/gp/mcp/cc_math_server.js"]
     }
   }
 }
@@ -54,7 +54,7 @@ Add to `.claude/settings.json` (use absolute paths):
 ## Docker (Remote / Headless)
 
 ```bash
-cd cc-constructor-current/scripts/mcp
+cd gp/mcp
 
 # Build and start
 docker compose up --build -d

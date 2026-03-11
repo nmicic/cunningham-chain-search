@@ -24,14 +24,17 @@ CC18/
 ├── analysis/
 │   ├── notes/                 Post-campaign analysis documents
 │   │   ├── CC_GAP_ANALYSIS.md          Root spacing and uniformity
+│   │   ├── CC_IMMUNIZATION_ANALYSIS.md   Immunization analysis overview
 │   │   ├── CC_IMMUNIZATION_STATISTICS.md  Residue immunity patterns
 │   │   ├── CC_IMMUNE_COMBINATIONS.md   Immune fingerprint catalog
 │   │   ├── CC_TWINS.md                 Closest CC root pairs
 │   │   ├── CC_CLUSTERS.md             Triplets, quadruplets, ghost chains
 │   │   └── ghost_chains_top.txt       Ghost chain census (depth 20)
-│   └── scripts/               Analysis tools (Python)
+│   └── scripts/               Analysis tools (Python + C)
 │       ├── cc_gap_analysis.py          Gap distribution analysis
 │       ├── analyze_cc_immunization.py  Immunization analysis
+│       ├── cc_immunization_analysis.c  Immunization analysis → JSON (C)
+│       ├── cc_immunization_heatmap.c   Immunization heatmap CSV (C)
 │       ├── cc_chain_autopsy_combo.py   Chain breaker autopsy
 │       ├── cc_fingerprint.py           Immune fingerprint extraction
 │       ├── ghost_chains.py             Ghost chain scanner
@@ -51,11 +54,12 @@ CC18/
 │   └── SEARCH_PIPELINE.md     How the GPU+CPU pipeline works
 │
 ├── tools/                     Utilities
-│   ├── run_cc18_campaign.sh   Campaign runner script
+│   ├── run_cc18_campaign.sh   Campaign runner script (CPU)
+│   ├── run_cc18_random_bits.sh  GPU runner, random bit sizes
+│   ├── run_cc17b_sequential.sh  GPU runner, second-kind sequential
 │   ├── validate_chains.c      Chain validator (C)
 │   ├── validate_chains.py     Chain validator (Python)
-│   ├── validate_chains.gp     Chain validator (GP/PARI)
-│   └── bench_safeprime.sh     Safe prime benchmark
+│   └── validate_chains.gp     Chain validator (GP/PARI)
 │
 ├── data/                      Campaign dataset
 │   ├── README.md              What's included and excluded

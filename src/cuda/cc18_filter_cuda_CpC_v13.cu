@@ -111,7 +111,7 @@
  * References:
  *   - cc18_filter_cuda_CpC_v9.cu: prefix-constrained search (base)
  *   - cc_gmp_v32_claude_03.c: mod-6 bucketed wheel algorithm
- *   - cc_gmp_v31_claude.c: filter pipeline, table init, hot path
+ *   - cc_gmp_v31_claude.c (historical CPU reference): filter pipeline, table init, hot path
  * =============================================================================
  */
 
@@ -1845,7 +1845,7 @@ static void* prover_worker(void* arg) {
              * If (n-1)/2 is prime, n is NOT a root — the chain extends
              * backward. We follow it back to the true root, then follow
              * forward from there to measure the FULL chain length.
-             * This matches cc_gmp_v31_claude.c behavior. */
+             * This matches the historical CPU reference (cc_gmp_v31_claude.c) behavior. */
             int is_root = 1;
             mpz_set(root, n);
             mpz_sub_ui(pred, n, 1);
@@ -3231,7 +3231,7 @@ int main(int argc, char** argv) {
     if (g_num_prove_threads > MAX_PROVE_THREADS) g_num_prove_threads = MAX_PROVE_THREADS;
 
     /* Clamp --depth to valid range [1, min(target_len, MAX_SIEVE_CHAIN_LEN)].
-     * The CPU reference (cc_gmp_v31_claude.c:2542) clamps to target-1.
+     * The historical CPU reference (cc_gmp_v31_claude.c:2542) clamps to target-1.
      * With the v8 line-sieve fix (pos < sieve_len), sieve_len == target_len
      * checks positions 1..target-1, which is correct. But sieve_len > target
      * would over-filter (rejecting chains beyond target length). */

@@ -1,4 +1,4 @@
-# Build context must be cc-constructor-current/scripts/ (set via docker-compose)
+# Build context must be gp/ (set via docker-compose)
 FROM node:20-slim
 
 # Install GP/PARI

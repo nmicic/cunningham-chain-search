@@ -50,6 +50,10 @@ Survivors from the GPU sieve undergo full BPSW primality testing using GMP. The 
 
 All standard CC10+ first-kind roots satisfy `p ≡ -1 (mod 40755)` where 40755 = lcm(3, 5, 11, 13, 19). This creates a mandatory grid with spacing ~2^15.3. Only grid positions need testing, which the search exploits.
 
+## Note on Published Code
+
+The published search code reflects the campaign version used to generate the released snapshot and analysis outputs. Some later or alternate optimizations were explored separately. One example is a reverse-check proving path (see `cc18_filter_cuda_CpC_v14.cu`), which can reduce CPU prover work by checking from higher chain positions inward, leveraging lower prime density in the outer shells. This path was not used for the published snapshot because the forward path was better suited for logging, inspection, and post-campaign analysis.
+
 ## Performance
 
 | Metric | Value |

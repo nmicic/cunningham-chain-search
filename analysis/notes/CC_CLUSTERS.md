@@ -274,9 +274,11 @@ Full census: 929,574 roots scanned to depth 20 (see `ghost_chains_top.txt`).
 | 11/20 | 318,389 | 34.3% | Bulk |
 | 10/20 | 181,420 | 19.5% | Minimum (CC10 only) |
 
+Post-snapshot discovery: an 88-bit CC16 root whose first 21 links contain 20 primes, with only link 17 composite and links 18-21 prime again.
+
 ### The Magnificent Seven (18/20 Primes)
 
-Only 7 roots in the entire dataset achieve 18 out of 20 prime links:
+Only 7 roots in the initial dataset snapshot achieve 18 out of 20 prime links:
 
 ```
                                                               Pattern (P=prime .=composite)
@@ -349,20 +351,13 @@ Clusters and ghost chains are descriptive features of this dataset. The gap anal
 Questions that could be explored post-campaign:
 
 - **Ghost chain census done** (depth 20, see `ghost_chains_top.txt`). Open: does ghost-chain density in a region correlate with the presence of higher CC roots? Not yet tested.
-- **CC16 neighborhood analysis**: Do the 50 nearest roots to each CC16 have different CC-level or ghost-chain distributions than a random sample? The GPU proximity test (`gpu_cc16_proximity_test.sh`) is designed to test this.
+- **CC16 neighborhood analysis**: Do the 50 nearest roots to each CC16 have different CC-level or ghost-chain distributions than a random sample?
 - **Residue fingerprinting**: Do the multi-record regions (0x2c24, 0x1003) share any residue patterns mod higher primes, or are they simply random coincidences?
 
 ---
 
-## Data Files
-
-| File | Contents |
-|------|----------|
-| `cc_triplets_analysis.txt` | Full triplet/quadruplet listings (raw) |
-| `cc_higher_clusters.txt` | Quintuplets, rainbows, high-value clusters |
-| `cc_twins.csv` | CC-twin pairs (98 rows) |
-
-### Related
+## Related
 
 - [CC_TWINS.md](CC_TWINS.md) — CC-twin records (pairs)
+- `cc_twins.csv` — CC-twin pairs (98 rows, in `data/`)
 - [CC_GAP_ANALYSIS.md](CC_GAP_ANALYSIS.md) — Gap distribution and uniformity proof

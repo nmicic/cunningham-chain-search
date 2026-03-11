@@ -215,7 +215,7 @@ for(t = 18, 23, \
 ## 11. Safe Prime Search (Layer 9)
 
 Layer 9 is new in v9: a complete safe prime search engine that implements
-the same combined q+2q+1 trial division algorithm as `cc_gmp_v35_03.c`.
+a combined q+2q+1 trial division algorithm (the same approach used in the unpublished C variant `cc_gmp_v35_03.c`).
 
 ### Why this matters
 
@@ -312,9 +312,9 @@ Each candidate goes through:
 5. BPSW test on `2q+1`
 6. Optional proven primality via `isprime()`
 
-### Correspondence with C code (v35-03)
+### Correspondence with C code (unpublished v35-03)
 
-| GP (cc_lib_v10) | C (cc_gmp_v35_03) | Purpose |
+| GP (cc_lib_v10) | C (cc_gmp_v35_03, unpublished) | Purpose |
 |---|---|---|
 | `cc_sp_trial_primes(3, N)` | `init_safeprime_trial_primes(N)` | Sieve of Eratosthenes |
 | `cc_sp_trial_check(q, primes)` | Inner loop in worker | Combined q+2q+1 mod check |
@@ -460,11 +460,11 @@ was 2x faster than OpenSSL's default. Our analysis shows even a modest
 increase from 1024 to ~10000 primes yields ~39% fewer BPSW tests at 4096 bits.
 The extra sieve cost per prime is ~2 ns (negligible vs ~5 ms BPSW cost).
 
-### C implementation: v35-04 (validated)
+### C implementation (unpublished v35-04)
 
 The delta-sieve algorithm from this GP layer was ported to C as
-`cc_gmp_v35_04_safeprime.c` — a dedicated multi-threaded safe prime generator.
-Initial benchmarks confirm it **beats OpenSSL's `dhparam`** at 4096-bit
+`cc_gmp_v35_04_safeprime.c` (unpublished) — a dedicated multi-threaded safe prime generator.
+Initial benchmarks confirm it beats OpenSSL's `dhparam` at 4096-bit
 single-threaded, with further gains from multi-threading and thread pinning.
 The GP `cc_sp_delta_sieve()` function implements the same algorithm and can be
 used to prototype, verify, and explain the approach before running the C code.
@@ -473,7 +473,7 @@ used to prototype, verify, and explain the approach before running the C code.
 
 ## 13. Alternative Algorithms — Layer 10
 
-Layer 10 contains 7 functions mined from the 22 CUDA programs in `cuda_legacy/`.
+Layer 10 contains 7 functions mined from the 22 CUDA programs in `experiments/failed/`.
 All use the `cc_x_` prefix (experimental/alternative).  These implement techniques
 explored during GPU development that are mathematically interesting and complement
 the production pipeline.

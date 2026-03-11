@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # =============================================================================
-# CC18a Campaign Runner — cc_gmp_v31_claude
+# CC18a Campaign Runner (originally for cc_gmp_v31_claude, now cc_gmp_v33_03)
 #
 # Strategy: Random-chunk sweep across bit sizes 89-99.
 # Each bit size runs for 15 minutes, then rotates.
@@ -38,7 +38,7 @@ trap "echo 'Caught signal, exiting...'; exit 0" INT TERM QUIT
 # --- Verify binary exists ---
 if [ ! -x "$CMD" ]; then
     echo "ERROR: $CMD not found or not executable"
-    echo "Build with: gcc -O3 -march=znver4 -flto -o cc_v31_claude cc-constructor-current/src/cc_gmp_v31_claude.c -lgmp -lpthread -lm"
+    echo "Build with: gcc -O3 -march=native -flto -o cc_v31_claude src/cpu/cc_gmp_v33_03.c -lgmp -lpthread -lm"
     exit 1
 fi
 

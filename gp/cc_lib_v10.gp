@@ -22,7 +22,7 @@
  *
  * v10 branch notes (builds on v9):
  * - NEW Layer 10: Alternative Algorithms (CUDA Legacy Extraction)
- *   7 cc_x_ functions mined from 22 CUDA programs in cuda_legacy/.
+ *   7 cc_x_ functions mined from 22 CUDA programs in experiments/failed/.
  *   cc_x_forbidden_mask    — bitmask sieve (METHOD-L01, O(1) per prime)
  *   cc_x_periodic_table    — periodic forbidden table via ord_q(2)
  *   cc_x_line_filter       — sieve-only chain pre-screen (METHOD-L17)
@@ -2224,7 +2224,7 @@ cc_grid_neighbors(p, {radius=5}, {kind=1}) =
 /* ────────────────────────────────────────────────────────────────────────────
  * Layer 7: Mini Search Engine
  *
- * GP/PARI reimplementation of the core algorithm from cc_gmp_v31_claude.c.
+ * GP/PARI reimplementation of the core algorithm from cc_gmp_v31_claude.c (historical CPU reference).
  * NOT meant for production speed — this is for interactive exploration,
  * brainstorming on a phone/iSH, and verifying algorithm understanding.
  *
@@ -3508,10 +3508,10 @@ cc_sp_trial_analysis(bits) =
  * Layer 10: Alternative Algorithms (CUDA Legacy Extraction)
  *
  * cc_x_ prefix: experimental/alternative methods mined from 22 CUDA programs
- * in cuda_legacy/.  These implement techniques explored during GPU development
+ * in experiments/failed/.  These implement techniques explored during GPU development
  * that are mathematically interesting and complement the production pipeline.
  *
- * Source mapping (METHOD-L IDs from cuda_legacy/MASTER_INDEX.md):
+ * Source mapping (METHOD-L IDs from experiments/failed/MASTER_INDEX.md):
  *   cc_x_forbidden_mask  ← METHOD-L01 (cc_search_unified_c7 v25/v27)
  *   cc_x_periodic_table  ← METHOD-L18 (cc_constructor v20)
  *   cc_x_line_filter     ← METHOD-L17 (cc_search_unified_c7 v27)

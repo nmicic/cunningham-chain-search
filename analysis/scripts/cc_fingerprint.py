@@ -879,7 +879,7 @@ def run_tests():
         chain_id += 1
     
     # Write test CSV
-    outpath = "/home/claude/test_fingerprints.csv"
+    outpath = "test_fingerprints.csv"
     with open(outpath, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
         writer.writeheader()
