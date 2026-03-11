@@ -53,6 +53,8 @@ Standalone HTML/JS tools that shaped the search design. Try them live on GitHub 
 
 ```bash
 # GPU engine (requires CUDA toolkit + GMP)
+# Adjust -arch=sm_XX for your GPU / CUDA toolchain
+# Example: Ada may use sm_89; some setups may still require sm_86
 nvcc -O3 -arch=sm_89 src/cuda/cc18_filter_cuda_CpC_v13.cu -o cc18_filter -lgmp -lpthread
 
 # CPU engine (requires GMP)
