@@ -39,15 +39,15 @@ See [`docs/SEARCH_PIPELINE.md`](docs/SEARCH_PIPELINE.md) for details.
 
 ## Interactive Visualizations
 
-Standalone HTML/JS tools that shaped the search design:
+Standalone HTML/JS tools that shaped the search design. Try them live on GitHub Pages:
 
-- [Cunningham Chain Mesh](visualizations/chain-mesh/) - 2-adic square-perimeter map with CC1/CC2 edges
-- [2-Adic Tree Explorer](visualizations/2adic-tree/) - inspectable tree with local chain structure
-- [3D Fold](visualizations/3d-fold/) - shell structure across levels
-- [p+1 Analysis](visualizations/p1-analysis/) - factor coloring and mod-p views
-- [Chain Analyzer](visualizations/chain-analyzer/) - single-chain analysis and breaker autopsy
-- [Campaign Dashboard](visualizations/campaign-dashboard/) - campaign tracking
-- [Immunization Dashboard](visualizations/immunization-dashboard/) - residue immunity analysis
+- [Cunningham Chain Mesh](https://nmicic.github.io/cunningham-chain-search/visualizations/chain-mesh/) — 2-adic square-perimeter map with CC1/CC2 edges
+- [2-Adic Tree Explorer](https://nmicic.github.io/cunningham-chain-search/visualizations/2adic-tree/) — inspectable tree with local chain structure
+- [3D Fold](https://nmicic.github.io/cunningham-chain-search/visualizations/3d-fold/) — shell structure across levels
+- [p+1 Analysis](https://nmicic.github.io/cunningham-chain-search/visualizations/p1-analysis/) — factor coloring and mod-p views
+- [Chain Analyzer](https://nmicic.github.io/cunningham-chain-search/visualizations/chain-analyzer/) — single-chain analysis and breaker autopsy
+- [Campaign Dashboard](https://nmicic.github.io/cunningham-chain-search/visualizations/campaign-dashboard/) — campaign tracking
+- [Immunization Dashboard](https://nmicic.github.io/cunningham-chain-search/visualizations/immunization-dashboard/) — residue immunity analysis
 
 ## Build
 

@@ -40,7 +40,7 @@ CC18/
 │       ├── ghost_chains.py             Ghost chain scanner
 │       └── cc_dashboard_data.py        Dashboard data generator
 │
-├── visualizations/            Interactive HTML tools (GitHub Pages ready)
+├── visualizations/            Interactive HTML tools (live at nmicic.github.io/cunningham-chain-search/visualizations/)
 │   ├── chain-analyzer/        Single-chain analysis, breaker autopsy
 │   ├── 2adic-tree/            2-adic tree explorer + generator script
 │   ├── 3d-fold/               3D shell structure visualization
