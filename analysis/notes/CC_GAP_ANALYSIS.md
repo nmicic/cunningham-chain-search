@@ -6,7 +6,7 @@ Analysis of distances between consecutive Cunningham chain roots across 929,574 
 
 **Initial observation**: minimum gaps appeared 15–32 bits closer than the **mean** gap, suggesting clustering. **Corrected analysis**: comparing against the **expected minimum gap** for random samples (which is ~R/n², not R/n), the observed minimums are exactly what uniform random spacing predicts — or even slightly larger (anti-clustered at CC12+).
 
-**This means: there are no "fertile regions". Every position on the mandatory grid is equally likely to yield CC18. Sequential search is optimal. Jumping to a predicted position after a find provides no advantage.**
+**This means: there is no validated evidence for exploitable "fertile regions" in the current data. Sequential search remains the default strategy, and jumping to predicted positions after a find is not supported by this analysis.**
 
 ### The Mandatory Grid
 

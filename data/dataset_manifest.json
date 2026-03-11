@@ -1,7 +1,7 @@
 {
   "dataset": "cc10plus_roots_snapshot_2026-03-12",
   "snapshot_date": "2026-03-12",
-  "description": "First-kind Cunningham chain roots (CC10+) from the NEW4 campaign",
+  "description": "Raw snapshot from the NEW4 campaign, with a published CC10+ analysis subset",
   "format": "CC<level> 0x<hex_root> <decimal_digits>",
   "total_roots": 1773994,
   "cc10plus_roots": 929574,
@@ -19,5 +19,6 @@
   },
   "sieve_target": 18,
   "grid_modulus": 40755,
-  "release_asset": "cc10plus_roots_snapshot_2026-03-12.txt.gz"
+  "release_asset": "cc10plus_roots_snapshot_2026-03-12.txt.gz",
+  "notes": "The raw release asset contains 1,773,994 recorded roots. The published analysis in this repo is based on the 929,574-root CC10+ subset."
 }

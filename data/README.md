@@ -18,7 +18,7 @@
 
 ### Via GitHub Releases
 
-The full dataset (`cc10plus_roots_snapshot_2026-03-12.txt.gz`, ~30 MB uncompressed) is available as a GitHub Release asset. It contains 1,773,994 roots in the format:
+The full raw snapshot (`cc10plus_roots_snapshot_2026-03-12.txt.gz`, ~30 MB uncompressed) is available as a GitHub Release asset. It contains 1,773,994 recorded roots in the format:
 
 ```
 CC10 0xHEXVALUE DIGITS
@@ -26,7 +26,9 @@ CC11 0xHEXVALUE DIGITS
 ...
 ```
 
-**Dataset summary:**
+The published CC10+ analysis subset derived from that snapshot contains 929,574 roots.
+
+**CC10+ subset summary:**
 
 | CC level | Count |
 |----------|------:|
