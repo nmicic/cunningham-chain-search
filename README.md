@@ -11,7 +11,7 @@ As of March 2026, this project has contributed:
 
 The original target (first-kind CC18 or CC19) has not yet been reached. This was compute-limited.
 
-The campaign dataset is documented in [`data/`](data/). Summary statistics and analysis CSVs are tracked in the repo; the full raw dataset (~30 MB, 1.77M roots including 44 CC16, a CC17, and ~929K CC10+) is available via GitHub Releases.
+The campaign dataset lives in a separate repo: [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data). Summary statistics and analysis CSVs are in [`data/`](data/) here; the full raw dataset (~30 MB, 929K CC10+ roots including 44 CC16 and a CC17) is available as a [release download](https://github.com/nmicic/cunningham-chain-data/releases/tag/v2026-03-12-snapshot).
 
 ## Quick Links
 
@@ -23,7 +23,8 @@ The campaign dataset is documented in [`data/`](data/). Summary statistics and a
 | Interactive visualizations | [`visualizations/`](visualizations/) |
 | Analysis notes | [`analysis/notes/`](analysis/notes/) |
 | Analysis scripts | [`analysis/scripts/`](analysis/scripts/) |
-| Campaign dataset | [`data/`](data/) |
+| Campaign dataset | [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data) (separate repo) |
+| Analysis CSVs | [`data/`](data/) |
 | Failed experiments (17 approaches) | [`experiments/failed/`](experiments/failed/) |
 | Repo map | [`docs/REPO_MAP.md`](docs/REPO_MAP.md) |
 | Search pipeline overview | [`docs/SEARCH_PIPELINE.md`](docs/SEARCH_PIPELINE.md) |
