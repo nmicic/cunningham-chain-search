@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Adic Tree — p+1 Factorization Analysis</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #080810;
+            --panel: #0e0e1c;
+            --card: #141428;
+            --border: #22223a;
+            --text: #dde0f0;
+            --dim: #6666aa;
+            --gold: #ffd700;
+            --cyan: #00d4ff;
+            --red: #ff4466;
+            --green: #00ff88;
+            /* 9 small-prime colors */
+            --c3:  #ff8c00;
+            --c5:  #ffd700;
+            --c7:  #00ee77;
+            --c11: #00ccff;
+            --c13: #8866ff;
+            --c17: #dd44ff;
+            --c19: #ff44aa;
+            --c23: #ff3355;
+            --c29: #66ffcc;
+        }
+        body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
+        .app { display: flex; height: 100vh; }
+
+        .panel {
+            width: 360px; min-width: 360px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            padding: 10px;
+            overflow-y: auto;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .logo { font-size: 13px; font-weight: 800; color: var(--gold); letter-spacing: -0.5px; }
+        .logo span { color: var(--dim); font-weight: 400; font-size: 11px; }
+
+        .section { background: var(--card); border-radius: 8px; padding: 10px; border: 1px solid var(--border); }
+        .sec-title {
+            font-size: 8px; font-weight: 700; color: var(--cyan);
+            text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
+        }
+
+        .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+        select, button {
+            background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); padding: 5px 9px; border-radius: 5px;
+            font-size: 10px; cursor: pointer; font-family: inherit;
+        }
+        button:hover { border-color: var(--cyan); color: var(--cyan); }
+        button.active { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        button.active-gold { background: var(--gold); color: #000; border-color: var(--gold); }
+
+        .btn-group { display: flex; gap: 3px; flex-wrap: wrap; }
+        .btn-group button { flex: 1; min-width: 50px; font-size: 9px; padding: 5px 4px; }
+
+        .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+        .stat { background: var(--bg); padding: 5px; border-radius: 4px; text-align: center; }
+        .stat-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gold); }
+        .stat-lbl { font-size: 7px; color: var(--dim); text-transform: uppercase; }
+
+        .expl { font-size: 9px; line-height: 1.6; color: var(--dim); background: var(--bg); padding: 7px; border-radius: 4px; }
+        .expl strong { color: var(--cyan); }
+
+        .sel-wrap { background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(0,212,255,0.04));
+            border: 1px solid rgba(255,215,0,0.25); border-radius: 7px; padding: 9px; }
+        .sel-num { font-family: 'JetBrains Mono', monospace; font-size: 22px; color: var(--gold); }
+
+        .props { display: grid; grid-template-columns: repeat(4,1fr); gap: 3px; margin-top: 6px; }
+        .prop { background: var(--bg); padding: 4px; border-radius: 3px; text-align: center; }
+        .prop-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+        .prop-lbl { font-size: 7px; color: var(--dim); }
+
+        .mini-display { font-family: 'JetBrains Mono', monospace; font-size: 9px; background: var(--bg);
+            padding: 6px; border-radius: 4px; margin-top: 6px; max-height: 90px; overflow-y: auto; }
+
+        /* p+1 factorization display */
+        .p1-section { margin-top: 7px; }
+        .p1-title { font-size: 8px; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .p1-eq { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gold); margin-bottom: 4px; }
+        .p1-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+        .p1-chip {
+            font-size: 9px; font-family: 'JetBrains Mono', monospace;
+            padding: 2px 6px; border-radius: 10px; font-weight: 700;
+        }
+        .p1-chip.lit { color: #000; }
+        .p1-chip.dim { background: #1a1a2e; color: #444; }
+
+        /* 3x3 mini-grid legend in panel */
+        .mini-legend { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; margin-top: 6px; }
+        .ml-item { display: flex; align-items: center; gap: 4px; font-size: 9px; }
+        .ml-sq { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+        /* Mod prime selector */
+        .mod-sel { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+        .mod-btn { font-size: 9px; padding: 3px 7px; border-radius: 4px; cursor: pointer;
+            border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; }
+        .mod-btn.active { color: #000; font-weight: 700; }
+
+        .canvas-area { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #canvas { cursor: crosshair; display: block; }
+
+        .tooltip {
+            position: fixed; background: var(--panel); border: 1px solid var(--border);
+            border-radius: 7px; padding: 9px; pointer-events: none; opacity: 0; z-index: 100;
+            font-size: 10px; min-width: 190px; transition: opacity 0.1s;
+        }
+        .tooltip.visible { opacity: 1; }
+        .tt-num { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--gold); }
+        .tt-p1 { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--cyan); margin-top: 3px; }
+
+        .info-badge { position: absolute; top: 10px; right: 10px; background: rgba(14,14,28,0.9);
+            border: 1px solid var(--border); border-radius: 5px; padding: 6px 10px;
+            font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--dim); }
+        .help-bar { position: absolute; bottom: 10px; left: 10px; background: rgba(14,14,28,0.9);
+            border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px;
+            font-size: 9px; color: var(--dim); }
+    </style>
+</head>
+<body>
+<div class="app">
+
+<!-- ════════════ LEFT PANEL ════════════ -->
+<div class="panel">
+    <div class="logo">2-Adic 3D <span>— p+1 Analysis Mode</span></div>
+
+    <!-- Grid size -->
+    <div class="section">
+        <div class="sec-title">Grid Size</div>
+        <div class="row">
+            <span>Dimension D × D</span>
+            <select id="gridSize">
+                <option value="2">2×2 (4-7)</option>
+                <option value="4" selected>4×4 (16-31)</option>
+                <option value="8">8×8 (64-127)</option>
+                <option value="16">16×16 (256-511)</option>
+                <option value="32">32×32 (1024-2047)</option>
+                <option value="64">64×64 (4096-8191)</option>
+                <option value="128">128×128 (16k-32k) ⚡slow</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Color mode — original -->
+    <div class="section">
+        <div class="sec-title">Classic Color Mode</div>
+        <div class="btn-group">
+            <button id="colorDepth" class="active">3D Depth</button>
+            <button id="colorChain">CC Chains</button>
+            <button id="colorPrime">Primes</button>
+        </div>
+        <div id="classicLegend" style="margin-top:7px;font-size:9px;color:var(--dim);">
+            Brightness = 2-adic Y-level · Red=prime · Gold=Cunningham chain
+        </div>
+    </div>
+
+    <!-- p+1 analysis modes -->
+    <div class="section">
+        <div class="sec-title">p+1 Factorization Modes</div>
+        <div class="expl" style="margin-bottom:7px;">
+            For each <strong>prime p</strong>: compute p+1, factor into small primes {3,5,7,11,13,17,19,23,29}.
+            Composites colored by <strong>n mod P</strong> when a mode is active.
+        </div>
+        <div class="btn-group">
+            <button id="modeOff"  class="active-gold">Off</button>
+            <button id="modeFactor">Factor Color</button>
+            <button id="modeGrid2">2×2 Grid</button>
+            <button id="modeGrid3">3×3 Grid</button>
+            <button id="modeModP">Mod n%P</button>
+        </div>
+
+        <!-- Mod prime selector (shown for modeModP and composites) -->
+        <div id="modPRow" style="margin-top:7px;display:none;">
+            <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">Modulus P (all cells colored by n mod P):</div>
+            <div class="mod-sel" id="modBtns"></div>
+        </div>
+
+        <!-- Composite treatment (for factor/grid modes) -->
+        <div id="compRow" style="margin-top:7px;display:none;">
+            <div style="font-size:9px;color:var(--dim);margin-bottom:4px;">Composites: n mod P coloring →</div>
+            <div class="mod-sel" id="compModBtns"></div>
+        </div>
+
+        <!-- Mini-legend for 9 primes -->
+        <div class="mini-legend" id="nineLegend" style="display:none;margin-top:8px;">
+        </div>
+    </div>
+
+    <!-- Cunningham chain options -->
+    <div class="section">
+        <div class="sec-title">Cunningham Chains</div>
+        <div class="row">
+            <span>Min chain len</span>
+            <select id="minChainLen">
+                <option value="2" selected>2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+                <option value="5">5+</option>
+            </select>
+        </div>
+        <div class="btn-group" style="margin-top:5px;">
+            <button id="showChainLines" class="active">Chain Lines</button>
+            <button id="highlightChains" class="active">Highlight Gold</button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section">
+        <div class="sec-title">Statistics</div>
+        <div class="stats">
+            <div class="stat"><div class="stat-val" id="statCells">—</div><div class="stat-lbl">Cells</div></div>
+            <div class="stat"><div class="stat-val" id="statPrimes">—</div><div class="stat-lbl">Primes</div></div>
+            <div class="stat"><div class="stat-val" id="statChains">—</div><div class="stat-lbl">CC Starts</div></div>
+            <div class="stat"><div class="stat-val" id="statLongest">—</div><div class="stat-lbl">Longest</div></div>
+            <div class="stat"><div class="stat-val" id="statMaxY">—</div><div class="stat-lbl">Max Depth</div></div>
+            <div class="stat"><div class="stat-val" id="statRange">—</div><div class="stat-lbl">Bottom</div></div>
+        </div>
+    </div>
+
+    <!-- Selected column info -->
+    <div class="section" id="selSection" style="display:none;">
+        <div class="sec-title">Selected Column</div>
+        <div class="sel-wrap">
+            <div class="sel-num" id="selTopNum">—</div>
+            <div style="color:var(--dim);font-size:10px;margin-top:2px;">
+                Position (<span id="selX">—</span>, <span id="selZ">—</span>)
+            </div>
+            <div class="props">
+                <div class="prop"><div class="prop-val" id="selY">—</div><div class="prop-lbl">Y Level</div></div>
+                <div class="prop"><div class="prop-val" id="selPrime">—</div><div class="prop-lbl">Prime?</div></div>
+                <div class="prop"><div class="prop-val" id="selChain">—</div><div class="prop-lbl">Chain</div></div>
+                <div class="prop"><div class="prop-val" id="selBottom">—</div><div class="prop-lbl">Bottom#</div></div>
+            </div>
+
+            <!-- p+1 analysis in panel -->
+            <div class="p1-section" id="p1SelSection" style="display:none;">
+                <div class="p1-title">p+1 Factorization</div>
+                <div class="p1-eq" id="p1Eq">—</div>
+                <div class="p1-chips" id="p1Chips"></div>
+            </div>
+
+            <div style="margin-top:7px;font-size:9px;color:var(--cyan);">Vertical spine:</div>
+            <div class="mini-display" id="rayDisplay"></div>
+            <div id="chainSection" style="display:none;">
+                <div style="margin-top:7px;font-size:9px;color:var(--gold);">Cunningham chain:</div>
+                <div class="mini-display" id="chainDisplay"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════ CANVAS AREA ════════════ -->
+<div class="canvas-area">
+    <canvas id="canvas"></canvas>
+    <div class="tooltip" id="tooltip">
+        <div class="tt-num" id="ttNum"></div>
+        <div id="ttPrime" style="margin:2px 0; font-size:10px;"></div>
+        <div style="color:var(--dim);">Pos: (<span id="ttX"></span>, <span id="ttZ"></span>) · Y=<span id="ttY"></span></div>
+        <div style="color:var(--dim);">Bottom: <span id="ttBottom"></span></div>
+        <div class="tt-p1" id="ttP1"></div>
+        <div id="ttChain" style="color:var(--gold);margin-top:3px;font-size:9px;"></div>
+    </div>
+    <div class="info-badge" id="infoBox">D=4 · 16–31</div>
+    <div class="help-bar">
+        Hover = inspect · Click = select · Grid modes show p+1 small-prime factorization
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span style="color:var(--dim);">© 2026 <a href="https://be.linkedin.com/in/nenadmicic" target="_blank" style="color:var(--dim);text-decoration:underline dotted;">Nenad Mićić</a> + Claude</span>
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank"
+           style="color:var(--cyan);text-decoration:none;">License: Apache-2.0</a>
+        &nbsp;&nbsp;·&nbsp;&nbsp;
+        <a href="https://en.wikipedia.org/wiki/Cunningham_chain" target="_blank"
+           style="color:var(--gold);text-decoration:none;">What is a Cunningham Chain?</a>
+    </div>
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONSTANTS — 9 small odd primes and their palette
+// ════════════════════════════════════════════════════════════
+
+const NINE_PRIMES = [3, 5, 7, 11, 13, 17, 19, 23, 29];
+const NINE_COLORS = [
+    '#ff8c00', // 3  orange
+    '#ffd700', // 5  gold
+    '#00ee77', // 7  green
+    '#00ccff', // 11 cyan
+    '#8866ff', // 13 violet
+    '#dd44ff', // 17 purple
+    '#ff44aa', // 19 pink
+    '#ff3355', // 23 red
+    '#55ffcc', // 29 mint
+];
+const NINE_LABELS = ['3','5','7','11','13','17','19','23','29'];
+
+// For 2×2 mode use first 4; 3×3 uses all 9
+const FOUR_PRIMES = NINE_PRIMES.slice(0,4);
+const FOUR_COLORS = NINE_COLORS.slice(0,4);
+
+// ════════════════════════════════════════════════════════════
+// MATH
+// ════════════════════════════════════════════════════════════
+
+function v2(n) { if (n<=0) return 32; return (n & -n).toString(2).length - 1; }
+function bitLength(n) { return n ? Math.floor(Math.log2(n))+1 : 0; }
+function isPrime(n) {
+    if (n<2) return false; if (n===2) return true; if (n%2===0) return false;
+    if (n<9) return true; if (n%3===0) return false;
+    const lim = Math.sqrt(n);
+    for (let i=5;i<=lim;i+=6){ if(n%i===0||n%(i+2)===0) return false; }
+    return true;
+}
+function smallestFactor(n) {
+    if (n<=1) return n; if (n%2===0) return 2;
+    for (let d=3;d*d<=n;d+=2) if(n%d===0) return d;
+    return n;
+}
+
+// Full prime factorization: returns sorted array of prime factors with repetition
+function factorize(n) {
+    if (n <= 1) return [];
+    const factors = [];
+    let x = n;
+    for (let d=2; d*d<=x; d++) {
+        while (x%d===0) { factors.push(d); x=Math.floor(x/d); }
+    }
+    if (x > 1) factors.push(x);
+    return factors;
+}
+
+// Compact factorization as string: "2³ × 3 × 7²"
+function factorStr(n) {
+    if (n <= 1) return String(n);
+    const facs = factorize(n);
+    const counts = {};
+    facs.forEach(f => counts[f] = (counts[f]||0)+1);
+    const superscript = e => e===1 ? '' : ['²','³','⁴','⁵','⁶','⁷','⁸'][e-2] || '^'+e;
+    return Object.entries(counts).map(([p,e]) => p + superscript(e)).join(' × ');
+}
+
+// Which of NINE_PRIMES divide n? Returns bitmask-like object
+function smallPrimeDivs(n) {
+    const d = {};
+    NINE_PRIMES.forEach(p => { d[p] = (n % p === 0); });
+    return d;
+}
+
+// Smallest index in NINE_PRIMES that divides n, or -1
+function smallestNineFactor(n) {
+    for (let i=0;i<NINE_PRIMES.length;i++) if(n%NINE_PRIMES[i]===0) return i;
+    return -1;
+}
+
+function get3DPos(n, D) {
+    if (n<=0) return null;
+    const D2 = D*D; let bottom=n, level=0;
+    while (bottom < D2) { bottom *= 2; level++; }
+    while (bottom >= 2*D2) { bottom = Math.floor(bottom/2); level--; }
+    if (bottom>=D2 && bottom<2*D2) {
+        const idx = bottom-D2;
+        return { X: idx%D, Y: level, Z: Math.floor(idx/D), bottomRep: bottom };
+    }
+    return null;
+}
+
+function followChain(start, maxLen=30) {
+    const chain=[]; let cur=start;
+    while (isPrime(cur)&&chain.length<maxLen){ chain.push(cur); cur=2*cur+1; }
+    return chain;
+}
+function isChainStart(n) {
+    if (!isPrime(n)) return false;
+    if (n<=2) return n===2;
+    const pred=(n-1)/2;
+    return !Number.isInteger(pred)||pred<2||!isPrime(pred);
+}
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+
+let D = 4;
+let colorMode = 'depth';       // classic: depth|chain|prime
+let p1Mode = 'off';            // p+1 overlay: off|factor|grid2|grid3|modp
+let modPrime = 3;              // modulus for modp mode
+let compModPrime = 3;          // modulus for composite coloring in factor/grid modes
+let minChainLen = 2;
+let showChainLines = true;
+let highlightChains = true;
+let selectedX = -1, selectedZ = -1;
+
+let grid = [], allChains = [], chainMemberSet = new Set(), maxYLevel = 0;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ════════════════════════════════════════════════════════════
+// BUILD GRID
+// ════════════════════════════════════════════════════════════
+
+// Loading overlay
+function showLoading(msg) {
+    let el = document.getElementById('loadingOverlay');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'loadingOverlay';
+        el.style.cssText = 'position:absolute;inset:0;background:rgba(8,8,16,0.85);'
+            + 'display:flex;align-items:center;justify-content:center;z-index:200;'
+            + 'font-family:JetBrains Mono,monospace;font-size:13px;color:#00d4ff;'
+            + 'flex-direction:column;gap:10px;';
+        document.querySelector('.canvas-area').appendChild(el);
+    }
+    el.innerHTML = `<div style="font-size:22px;">⏳</div><div>${msg}</div>`;
+    el.style.display = 'flex';
+}
+function hideLoading() {
+    const el = document.getElementById('loadingOverlay');
+    if (el) el.style.display = 'none';
+}
+
+async function buildGrid() {
+    grid = []; allChains = []; chainMemberSet = new Set(); maxYLevel = 0;
+    const D2 = D*D, botStart = D2, botEnd = 2*D2-1;
+    const trackSpine = (D <= 32);  // skip numbers[] for large grids
+
+    if (D >= 64) showLoading(`Building D=${D} grid… (${D*D} cells, range ${botStart}–${botEnd})`);
+
+    // Yield to browser so loading message shows
+    await new Promise(r => setTimeout(r, 0));
+
+    for (let z=0;z<D;z++) {
+        grid[z]=[];
+        for (let x=0;x<D;x++) {
+            grid[z][x] = {
+                X:x, Z:z,
+                topNum: null, Y:0,
+                bottomNum: botStart + z*D + x,
+                isPrime: false,
+                chainLen: 0, isChainStart: false, isChainMember: false,
+                numbers: trackSpine ? [] : null,
+                p1Val: null, p1Str: '', p1Divs: {}, p1SmallestIdx: -1,
+                nDivs: {}
+            };
+        }
+    }
+
+    // Fill grid: iterate all numbers that map to our D×D region
+    // Efficient: for each bottom-row cell, walk up (divide by 2) to find top
+    // Then for each cell, check if odd numbers between D² and 2D²-1 map here
+    for (let n=2; n<=botEnd; n++) {
+        if (bitLength(n)<2) continue;
+        const pos = get3DPos(n, D);
+        if (pos && pos.X>=0 && pos.X<D && pos.Z>=0 && pos.Z<D) {
+            const cell = grid[pos.Z][pos.X];
+            if (trackSpine) cell.numbers.push({n, Y:pos.Y});
+            if (cell.topNum===null || pos.Y>cell.Y) {
+                cell.topNum=n; cell.Y=pos.Y; cell.isPrime=isPrime(n);
+            }
+            if (pos.Y>maxYLevel) maxYLevel=pos.Y;
+        }
+    }
+
+    if (D >= 64) showLoading(`D=${D}: finding Cunningham chains…`);
+    await new Promise(r => setTimeout(r, 0));
+
+    // Cunningham chains
+    let longestChain=0, chainStartCount=0;
+    for (let z=0;z<D;z++) for (let x=0;x<D;x++) {
+        const cell=grid[z][x];
+        if (!cell.topNum) continue;
+        if (isChainStart(cell.topNum)) {
+            cell.isChainStart=true;
+            const chain=followChain(cell.topNum);
+            cell.chainLen=chain.length;
+            if (chain.length>=2) {
+                chainStartCount++;
+                const positions=chain.map(n=>{const p=get3DPos(n,D);return p?{n,X:p.X,Z:p.Z,Y:p.Y}:{n,X:-1,Z:-1,Y:-1};});
+                allChains.push({start:cell.topNum,chain,positions});
+                chain.forEach(n=>chainMemberSet.add(n));
+                if(chain.length>longestChain) longestChain=chain.length;
+            }
+        }
+    }
+
+    // Mark chain members + compute p+1 data
+    for (let z=0;z<D;z++) for (let x=0;x<D;x++) {
+        const cell=grid[z][x];
+        if (!cell.topNum) continue;
+        if (chainMemberSet.has(cell.topNum)) cell.isChainMember=true;
+        const p1 = cell.topNum + 1;
+        cell.p1Val = p1;
+        cell.p1Str = D <= 32 ? factorStr(p1) : '';
+        cell.p1Divs = smallPrimeDivs(p1);
+        cell.p1SmallestIdx = smallestNineFactor(p1);
+        cell.nDivs = smallPrimeDivs(cell.topNum);
+    }
+
+    const primeCount=grid.flat().filter(c=>c.isPrime).length;
+    document.getElementById('statCells').textContent=D*D;
+    document.getElementById('statPrimes').textContent=primeCount;
+    document.getElementById('statChains').textContent=chainStartCount;
+    document.getElementById('statLongest').textContent=longestChain;
+    document.getElementById('statMaxY').textContent=maxYLevel;
+    document.getElementById('statRange').textContent=`${botStart}–${botEnd}`;
+    document.getElementById('infoBox').textContent=`D=${D} · ${botStart}–${botEnd}`;
+
+    hideLoading();
+}
+
+// ════════════════════════════════════════════════════════════
+// COLOR LOGIC
+// ════════════════════════════════════════════════════════════
+
+// hue for n mod P coloring (0–359)
+function modHue(n, P) { return Math.round(360 * (n % P) / P); }
+function modColor(n, P) {
+    const h = modHue(n, P);
+    return `hsl(${h}, 80%, 45%)`;
+}
+
+function getClassicColor(cell) {
+    const {topNum, Y, isPrime, isChainStart, isChainMember, chainLen} = cell;
+    if (!topNum) return {bg:'#080810', text:'#222', border:null};
+
+    if (highlightChains && isChainMember) {
+        if (isChainStart && chainLen>=minChainLen) return {bg:'#ffd700',text:'#000',border:'#fff',glow:true};
+        return {bg:'#ff8800',text:'#000',border:'#ffd700'};
+    }
+
+    switch(colorMode) {
+        case 'depth': {
+            const ny = maxYLevel>0 ? Y/maxYLevel : 0;
+            const l = 12 + ny*50;
+            return {bg:`hsl(${isPrime?0:220},${isPrime?50:25}%,${l}%)`, text:l>35?'#000':'#888', border:isPrime?'var(--red)':null};
+        }
+        case 'chain': {
+            if (isChainStart&&chainLen>=minChainLen) return {bg:`hsl(${Math.max(0,60-chainLen*8)},90%,50%)`,text:'#000',border:'#fff',glow:true};
+            if (isChainStart&&chainLen>=2) return {bg:'#885500',text:'#fff',border:null};
+            if (isPrime) return {bg:'#442222',text:'#888',border:null};
+            return {bg:'#141428',text:'#444',border:null};
+        }
+        case 'prime': {
+            if (isPrime) return {bg:'#ff4466',text:'#fff',border:null};
+            const ny=maxYLevel>0?Y/maxYLevel:0; const l=10+ny*25;
+            return {bg:`hsl(220,20%,${l}%)`,text:'#555',border:null};
+        }
+    }
+    return {bg:'#141428',text:'#666',border:null};
+}
+
+// For p1Mode === 'factor': solid color per cell
+function getFactorColor(cell) {
+    if (!cell.topNum) return {bg:'#080810',text:'#222',border:null};
+    const {isPrime, isChainMember, isChainStart, chainLen, topNum} = cell;
+
+    // Chain highlight overrides
+    if (highlightChains && isChainMember) {
+        if (isChainStart && chainLen>=minChainLen) return {bg:'#ffd700',text:'#000',border:'#fff',glow:true};
+        return {bg:'#ff8800',text:'#000',border:'#ffd700'};
+    }
+
+    if (isPrime) {
+        const idx = cell.p1SmallestIdx;
+        if (idx >= 0) {
+            return {bg: NINE_COLORS[idx], text:'#000', border: isChainMember?'#ffd700':null};
+        }
+        // p+1 has no factor in our list (power of 2 only?) — Mersenne-like
+        return {bg:'#ffffff', text:'#000', border:'#ffd700', glow:true};
+    } else {
+        // Composite: color by n mod compModPrime
+        return {bg: modColor(topNum, compModPrime), text:'#000', border:null};
+    }
+}
+
+// For p1Mode === 'modp': color ALL cells by n mod modPrime
+function getModPColor(cell) {
+    if (!cell.topNum) return {bg:'#080810',text:'#222',border:null};
+    const {isPrime, isChainMember, isChainStart, chainLen, topNum} = cell;
+    if (highlightChains && isChainMember) {
+        if (isChainStart&&chainLen>=minChainLen) return {bg:'#ffd700',text:'#000',border:'#fff',glow:true};
+        return {bg:'#ff8800',text:'#000',border:'#ffd700'};
+    }
+    const h = modHue(topNum, modPrime);
+    const l = isPrime ? 55 : 35;
+    return {bg:`hsl(${h},75%,${l}%)`, text: l>45?'#000':'#888', border: isPrime?'rgba(255,255,255,0.5)':null};
+}
+
+// For grid modes: return a dark base background
+function getGridBaseColor(cell) {
+    if (!cell.topNum) return {bg:'#080810', text:'#222', border:null};
+    const {isPrime, isChainMember, isChainStart, chainLen} = cell;
+    if (highlightChains && isChainMember) {
+        if (isChainStart&&chainLen>=minChainLen) return {bg:'rgba(255,215,0,0.12)',text:'#000',border:'#ffd700',glow:false};
+        return {bg:'rgba(255,136,0,0.12)',text:'#000',border:'#ff8800'};
+    }
+    return {bg: isPrime ? '#0d0d20' : '#050510', text:'#444', border: null};
+}
+
+function getColor(cell) {
+    switch(p1Mode) {
+        case 'factor': return getFactorColor(cell);
+        case 'modp':   return getModPColor(cell);
+        case 'grid2':
+        case 'grid3':  return getGridBaseColor(cell);
+        default:       return getClassicColor(cell);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// MINI-GRID DRAWING
+// ════════════════════════════════════════════════════════════
+
+function drawMiniGrid(px, py, cellSize, cell) {
+    const is3x3 = (p1Mode === 'grid3');
+    const gridN = is3x3 ? 3 : 2;
+    const primes = is3x3 ? NINE_PRIMES : FOUR_PRIMES;
+    const colors = is3x3 ? NINE_COLORS : FOUR_COLORS;
+
+    const pad = Math.max(2, cellSize * 0.1);
+    const avail = cellSize - 2*pad;
+    const gap = Math.max(1, cellSize * 0.025);
+    const sqW = (avail - gap*(gridN-1)) / gridN;
+    const sqH = sqW;
+
+    // Source of divisibility: for prime, use p+1; for composite, use n directly
+    const divs = cell.isPrime ? cell.p1Divs : cell.nDivs;
+
+    for (let row=0; row<gridN; row++) {
+        for (let col=0; col<gridN; col++) {
+            const idx = row*gridN + col;
+            if (idx >= primes.length) continue;
+            const p = primes[idx];
+            const lit = divs[p];
+
+            const sx = px + pad + col*(sqW+gap);
+            const sy = py + pad + row*(sqH+gap);
+
+            if (lit) {
+                ctx.fillStyle = colors[idx];
+                ctx.shadowColor = colors[idx];
+                ctx.shadowBlur = sqW > 15 ? 6 : 2;
+                ctx.fillRect(sx, sy, sqW, sqH);
+                ctx.shadowBlur = 0;
+            } else {
+                ctx.fillStyle = '#0e0e22';
+                ctx.fillRect(sx, sy, sqW, sqH);
+                // faint outline
+                ctx.strokeStyle = '#222244';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(sx+0.5, sy+0.5, sqW-1, sqH-1);
+            }
+
+            // Label inside square if large enough
+            if (sqW >= 14) {
+                ctx.fillStyle = lit ? '#000' : '#333355';
+                ctx.font = `700 ${Math.max(7, sqW*0.42)}px JetBrains Mono`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(NINE_LABELS[idx], sx+sqW/2, sy+sqH/2);
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════════
+
+function resize() {
+    const area = canvas.parentElement;
+    const size = Math.min(area.clientWidth-40, area.clientHeight-60, 1600);
+    canvas.width = size; canvas.height = size;
+    render();
+}
+
+function render() {
+    const size = canvas.width;
+    const cellSize = size/D;
+    ctx.fillStyle = '#080810';
+    ctx.fillRect(0,0,size,size);
+
+    // Draw cells
+    for (let z=0;z<D;z++) for (let x=0;x<D;x++) {
+        const cell = grid[z][x];
+        const col = getColor(cell);
+        const px = x*cellSize, py = z*cellSize;
+
+        if (col.glow) { ctx.shadowColor=col.bg; ctx.shadowBlur=10; }
+        ctx.fillStyle = col.bg;
+        ctx.fillRect(px+0.5, py+0.5, cellSize-1, cellSize-1);
+        ctx.shadowBlur = 0;
+
+        if (col.border) {
+            ctx.strokeStyle = col.border;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            ctx.strokeRect(px+1.5, py+1.5, cellSize-3, cellSize-3);
+        }
+
+        // Mini-grid overlay
+        if ((p1Mode==='grid2'||p1Mode==='grid3') && cell.topNum) {
+            drawMiniGrid(px, py, cellSize, cell);
+        }
+
+        // Selection ring
+        if (x===selectedX && z===selectedZ) {
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+            ctx.strokeRect(px+2, py+2, cellSize-4, cellSize-4);
+        }
+    }
+
+    // Chain lines
+    if (showChainLines) {
+        ctx.lineWidth=2; ctx.setLineDash([5,3]);
+        for (const {chain,positions} of allChains) {
+            if (chain.length<minChainLen) continue;
+            ctx.strokeStyle='rgba(255,215,0,0.6)';
+            ctx.beginPath(); let started=false;
+            for (const pos of positions) {
+                if (pos.X<0||pos.X>=D||pos.Z<0||pos.Z>=D) continue;
+                const ppx=pos.X*cellSize+cellSize/2, ppy=pos.Z*cellSize+cellSize/2;
+                if (!started) { ctx.moveTo(ppx,ppy); started=true; } else ctx.lineTo(ppx,ppy);
+            }
+            ctx.stroke();
+            for (let i=0;i<positions.length;i++) {
+                const pos=positions[i];
+                if (pos.X<0||pos.X>=D||pos.Z<0||pos.Z>=D) continue;
+                const ppx=pos.X*cellSize+cellSize/2, ppy=pos.Z*cellSize+cellSize/2;
+                ctx.beginPath();
+                ctx.arc(ppx,ppy,Math.max(3,cellSize/8),0,Math.PI*2);
+                ctx.fillStyle = i===0?'#fff':'#ffd700';
+                ctx.setLineDash([]);
+                ctx.fill(); ctx.setLineDash([5,3]);
+            }
+        }
+        ctx.setLineDash([]);
+    }
+
+    // Numbers for small/large cells
+    if (D<=16 && cellSize>30 && p1Mode!=='grid2' && p1Mode!=='grid3') {
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        for (let z=0;z<D;z++) for (let x=0;x<D;x++) {
+            const cell=grid[z][x];
+            if (!cell.topNum) continue;
+            const col=getColor(cell);
+            ctx.fillStyle=col.text;
+            ctx.font=`600 ${Math.max(10,cellSize*0.3)}px JetBrains Mono`;
+            ctx.fillText(cell.topNum.toString(), x*cellSize+cellSize/2, z*cellSize+cellSize/2);
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// INTERACTION
+// ════════════════════════════════════════════════════════════
+
+function getCellAt(mx,my) {
+    const rect=canvas.getBoundingClientRect();
+    const x=mx-rect.left, y=my-rect.top;
+    const cs=canvas.width/D;
+    const cx=Math.floor(x/cs), cz=Math.floor(y/cs);
+    if(cx>=0&&cx<D&&cz>=0&&cz<D) return {x:cx,z:cz,cell:grid[cz][cx]};
+    return null;
+}
+
+canvas.addEventListener('mousemove', e => {
+    const res=getCellAt(e.clientX,e.clientY);
+    const tt=document.getElementById('tooltip');
+    if (res && res.cell.topNum) {
+        const {x,z,cell}=res;
+        document.getElementById('ttNum').textContent=cell.topNum;
+        document.getElementById('ttPrime').textContent=cell.isPrime?'★ PRIME':`Composite (÷${smallestFactor(cell.topNum)})`;
+        document.getElementById('ttPrime').style.color=cell.isPrime?'var(--red)':'var(--dim)';
+        document.getElementById('ttX').textContent=x;
+        document.getElementById('ttZ').textContent=z;
+        document.getElementById('ttY').textContent=cell.Y;
+        document.getElementById('ttBottom').textContent=cell.bottomNum;
+        // p+1 info in tooltip
+        if (cell.isPrime && cell.topNum > 2) {
+            document.getElementById('ttP1').textContent=`p+1 = ${cell.p1Val}` + (cell.p1Str ? ` = ${cell.p1Str}` : '');
+            document.getElementById('ttP1').style.display='block';
+        } else {
+            document.getElementById('ttP1').style.display='none';
+        }
+        if (cell.isChainStart&&cell.chainLen>=2) document.getElementById('ttChain').textContent=`Chain start (len ${cell.chainLen})`;
+        else if (cell.isChainMember) document.getElementById('ttChain').textContent='Cunningham chain member';
+        else document.getElementById('ttChain').textContent='';
+        tt.style.left=(e.clientX+16)+'px'; tt.style.top=(e.clientY+16)+'px';
+        tt.classList.add('visible');
+    } else { tt.classList.remove('visible'); }
+});
+canvas.addEventListener('mouseleave',()=>document.getElementById('tooltip').classList.remove('visible'));
+canvas.addEventListener('click',e=>{const r=getCellAt(e.clientX,e.clientY);if(r)selectCell(r.x,r.z);});
+
+function selectCell(x,z) {
+    selectedX=x; selectedZ=z;
+    const cell=grid[z][x];
+    if (!cell.topNum) { document.getElementById('selSection').style.display='none'; render(); return; }
+
+    document.getElementById('selSection').style.display='block';
+    document.getElementById('selTopNum').textContent=cell.topNum;
+    document.getElementById('selX').textContent=x;
+    document.getElementById('selZ').textContent=z;
+    document.getElementById('selY').textContent=cell.Y;
+    document.getElementById('selPrime').textContent=cell.isPrime?'Yes':'No';
+    document.getElementById('selChain').textContent=cell.isChainStart?cell.chainLen:(cell.isChainMember?'(member)':'—');
+    document.getElementById('selBottom').textContent=cell.bottomNum;
+
+    // p+1 factorization panel
+    if (cell.isPrime && cell.topNum > 2) {
+        document.getElementById('p1SelSection').style.display='block';
+        document.getElementById('p1Eq').textContent=`${cell.topNum}+1 = ${cell.p1Val}` + (cell.p1Str ? ` = ${cell.p1Str}` : '');
+        const chipsDiv=document.getElementById('p1Chips');
+        chipsDiv.innerHTML='';
+        NINE_PRIMES.forEach((p,i)=>{
+            const div=document.createElement('span');
+            div.className='p1-chip '+(cell.p1Divs[p]?'lit':'dim');
+            if (cell.p1Divs[p]) div.style.background=NINE_COLORS[i];
+            div.textContent=p;
+            chipsDiv.appendChild(div);
+        });
+    } else {
+        document.getElementById('p1SelSection').style.display='none';
+    }
+
+    // Vertical spine
+    const sorted = cell.numbers ? [...cell.numbers].sort((a,b)=>b.Y-a.Y) : [];
+    document.getElementById('rayDisplay').innerHTML = sorted.length
+        ? sorted.map(({n,Y})=>`<span style="color:${isPrime(n)?'var(--red)':'var(--dim)'}">${n}</span>(Y=${Y})`).join(' → ')
+        : '<span style="color:var(--dim)">(spine hidden for D≥64)</span>';
+
+    // Chain info
+    if (cell.isChainMember||cell.isChainStart) {
+        let fc=null;
+        for (const ch of allChains) if(ch.chain.includes(cell.topNum)){fc=ch;break;}
+        if (fc) {
+            document.getElementById('chainSection').style.display='block';
+            document.getElementById('chainDisplay').innerHTML=fc.chain.map((n,i)=>{
+                const pos=fc.positions[i];
+                const ps=pos.X>=0?`(${pos.X},${pos.Z})`:'[out]';
+                const isCur=n===cell.topNum;
+                return `<span style="${isCur?'background:var(--gold);color:#000;padding:0 3px;border-radius:2px;':'color:var(--gold)'}">${n}</span><span style="color:var(--dim);font-size:8px;">${ps}</span>`;
+            }).join(' → ');
+        } else document.getElementById('chainSection').style.display='none';
+    } else document.getElementById('chainSection').style.display='none';
+
+    render();
+}
+
+// ════════════════════════════════════════════════════════════
+// CONTROLS
+// ════════════════════════════════════════════════════════════
+
+document.getElementById('gridSize').onchange=async function(){
+    D=+this.value; selectedX=selectedZ=-1;
+    document.getElementById('selSection').style.display='none';
+    await buildGrid(); render();
+};
+
+['Depth','Chain','Prime'].forEach(m=>{
+    document.getElementById('color'+m).onclick=function(){
+        document.querySelectorAll('[id^="color"]').forEach(b=>b.classList.remove('active'));
+        this.classList.add('active');
+        colorMode=m.toLowerCase();
+        if (p1Mode!=='off') { p1Mode='off'; syncP1Buttons(); }
+        render();
+    };
+});
+
+// p1 mode buttons
+function syncP1Buttons() {
+    ['Off','Factor','Grid2','Grid3','ModP'].forEach(id=>{
+        document.getElementById('mode'+id).classList.remove('active-gold');
+    });
+    const map={off:'Off',factor:'Factor',grid2:'Grid2',grid3:'Grid3',modp:'ModP'};
+    document.getElementById('mode'+(map[p1Mode]||'Off')).classList.add('active-gold');
+    document.getElementById('modPRow').style.display = p1Mode==='modp' ? 'block' : 'none';
+    document.getElementById('compRow').style.display = (p1Mode==='factor'||p1Mode==='grid2'||p1Mode==='grid3') ? 'block' : 'none';
+    document.getElementById('nineLegend').style.display = p1Mode!=='off' ? 'grid' : 'none';
+}
+
+document.getElementById('modeOff').onclick=()=>{p1Mode='off'; syncP1Buttons(); render();};
+document.getElementById('modeFactor').onclick=()=>{p1Mode='factor'; syncP1Buttons(); render();};
+document.getElementById('modeGrid2').onclick=()=>{p1Mode='grid2'; syncP1Buttons(); render();};
+document.getElementById('modeGrid3').onclick=()=>{p1Mode='grid3'; syncP1Buttons(); render();};
+document.getElementById('modeModP').onclick=()=>{p1Mode='modp'; syncP1Buttons(); render();};
+
+// Build mod prime buttons
+function buildModButtons(containerId, currentVal, onChange) {
+    const c=document.getElementById(containerId);
+    c.innerHTML='';
+    NINE_PRIMES.forEach((p,i)=>{
+        const b=document.createElement('button');
+        b.className='mod-btn'+(p===currentVal?' active':'');
+        if(p===currentVal) b.style.background=NINE_COLORS[i];
+        b.textContent=p;
+        b.onclick=()=>{
+            onChange(p);
+            // Refresh buttons
+            c.querySelectorAll('.mod-btn').forEach((x,j)=>{
+                const v=NINE_PRIMES[j]; const isA=v===p;
+                x.classList.toggle('active',isA);
+                x.style.background=isA?NINE_COLORS[j]:'';
+            });
+            render();
+        };
+        c.appendChild(b);
+    });
+}
+buildModButtons('modBtns', modPrime, v=>{ modPrime=v; });
+buildModButtons('compModBtns', compModPrime, v=>{ compModPrime=v; });
+
+// Build nine-prime legend
+function buildNineLegend() {
+    const lg=document.getElementById('nineLegend');
+    lg.innerHTML='';
+    NINE_PRIMES.forEach((p,i)=>{
+        const d=document.createElement('div');
+        d.className='ml-item';
+        d.innerHTML=`<div class="ml-sq" style="background:${NINE_COLORS[i]}"></div><span>${p}</span>`;
+        lg.appendChild(d);
+    });
+}
+buildNineLegend();
+
+document.getElementById('minChainLen').onchange=function(){minChainLen=+this.value; render();};
+document.getElementById('showChainLines').onclick=function(){showChainLines=!showChainLines; this.classList.toggle('active',showChainLines); render();};
+document.getElementById('highlightChains').onclick=function(){highlightChains=!highlightChains; this.classList.toggle('active',highlightChains); render();};
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+window.addEventListener('resize', resize);
+buildGrid().then(() => resize());
+</script>
+</body>
+</html>

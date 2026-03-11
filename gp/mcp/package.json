@@ -1,0 +1,10 @@
+{
+  "name": "cc-math-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Cunningham Chain math (GP/PARI backend)",
+  "type": "module",
+  "main": "cc_math_server.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
+}

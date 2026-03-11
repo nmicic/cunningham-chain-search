@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2-Adic Tree C(2n)=2·C(n) — Square-Perimeter View</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#080810;--panel:#0e0e1c;--card:#141428;--border:#22223a;--text:#dde0f0;--dim:#6666aa;--gold:#ffd700;--cyan:#22d3ee;--cc1:#ef4444;--cc2:#3b82f6;--green:#34d399}
+    body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+    .header{background:var(--panel);border-bottom:1px solid var(--border);padding:6px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50}
+    .header-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--gold)}
+    .header-sub{font-size:9px;color:var(--dim);margin-left:10px}
+    .header-right{font-size:8px;color:var(--dim)}
+    .header-right a{color:var(--cyan);text-decoration:none}
+    .header-right a:hover{text-decoration:underline}
+    .main-area{flex:1;position:relative;overflow:hidden}
+    canvas{display:block;width:100%;height:100%;cursor:grab}
+    canvas:active{cursor:grabbing}
+    .controls{position:absolute;top:8px;left:8px;background:rgba(14,14,28,.96);padding:10px;border-radius:10px;border:1px solid var(--border);z-index:100;font-size:10px;width:268px;max-height:calc(100% - 16px);overflow-y:auto;backdrop-filter:blur(8px)}
+    .controls::-webkit-scrollbar{width:4px}
+    .controls::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .st{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.5px;margin:10px 0 5px 0;padding-bottom:3px;border-bottom:1px solid var(--border)}
+    .cr{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+    .cr label{color:var(--dim);min-width:65px;font-size:9px}
+    select{background:var(--card);border:1px solid var(--border);color:#fff;padding:3px 5px;border-radius:4px;font-family:inherit;font-size:10px;flex:1}
+    .cb{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+    .cb input{width:13px;height:13px;accent-color:var(--cyan)}
+    .cb label{color:#aab;font-size:10px;flex:1}
+    .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:middle}
+    .btn{background:var(--card);border:1px solid var(--border);color:#fff;padding:5px 8px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:10px;width:100%;margin-top:4px}
+    .btn:hover{border-color:var(--cyan);color:var(--cyan)}
+    .btn.gold{background:rgba(255,215,0,.1);border-color:rgba(255,215,0,.25);color:var(--gold)}
+    .zoom-info{text-align:center;font-size:8px;color:var(--dim);margin-top:5px}
+    .n-disp{font-size:14px;font-weight:700;color:#fff;text-align:center;background:var(--card);padding:5px;border-radius:5px;margin-bottom:8px;border:1px solid var(--border)}
+    .n-disp span{color:var(--gold)}
+    /* Mod-p color legend mini */
+    .modleg{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;margin-bottom:2px}
+    .modleg-item{font-size:8px;padding:1px 4px;border-radius:3px;background:var(--card)}
+
+    .chains-panel{position:absolute;top:8px;right:8px;background:rgba(14,14,28,.96);padding:10px;border-radius:10px;border:1px solid var(--border);font-size:10px;max-height:calc(100% - 16px);overflow-y:auto;width:290px;z-index:100;backdrop-filter:blur(8px)}
+    .chains-panel::-webkit-scrollbar{width:4px}
+    .chains-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .chains-panel h3{font-family:'Syne',sans-serif;color:var(--gold);margin-bottom:6px;font-size:11px}
+    .ct{display:flex;gap:3px;margin-bottom:6px}
+    .ct div{flex:1;padding:3px 5px;font-size:9px;font-weight:600;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--dim);cursor:pointer;text-align:center}
+    .ct div:hover{color:var(--text)}
+    .ct div.a1{background:rgba(239,68,68,.15);color:var(--cc1);border-color:var(--cc1)}
+    .ct div.a2{background:rgba(59,130,246,.15);color:var(--cc2);border-color:var(--cc2)}
+    .ct div.aa{background:rgba(255,215,0,.1);color:var(--gold);border-color:rgba(255,215,0,.4)}
+    .ci{background:var(--card);padding:5px 7px;border-radius:4px;margin-bottom:3px;cursor:pointer;border:1px solid transparent}
+    .ci:hover{border-color:var(--gold)}
+    .ci.sel{border-color:var(--gold);background:rgba(255,215,0,.06)}
+    .ci .ch{display:flex;justify-content:space-between}
+    .ci .t1{font-weight:700;font-size:10px;color:var(--cc1)}
+    .ci .t2{font-weight:700;font-size:10px;color:var(--cc2)}
+    .ci .cp{color:var(--gold);font-size:9px;margin-top:2px}
+    .info-panel{position:absolute;bottom:8px;left:8px;background:rgba(14,14,28,.96);padding:8px 10px;border-radius:8px;border:1px solid var(--border);font-size:10px;display:none;z-index:100;max-width:350px;backdrop-filter:blur(8px)}
+    .info-panel.visible{display:block}
+    .ir{display:flex;gap:6px;margin-bottom:2px}
+    .il{color:var(--dim);min-width:70px;font-size:9px}
+    .iv{color:#fff;word-break:break-all}
+    .iv.prime{color:var(--cc1);font-weight:bold}
+    .legend{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(14,14,28,.96);padding:5px 12px;border-radius:6px;border:1px solid var(--border);display:flex;gap:12px;font-size:8px;z-index:100;flex-wrap:wrap;justify-content:center;backdrop-filter:blur(8px)}
+    .legend-item{display:flex;align-items:center;gap:3px;white-space:nowrap}
+    .ld{width:7px;height:7px;border-radius:50%}
+    .ll{width:12px;height:2px;border-radius:1px}
+    .tooltip{position:absolute;background:rgba(14,14,28,.95);border:1px solid var(--border);padding:4px 7px;border-radius:4px;font-size:10px;pointer-events:none;z-index:200;display:none;white-space:nowrap}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px">
+      <div class="header-title">2-Adic Tree C(2n) = 2 × C(n) — Square-Perimeter View</div>
+      <div class="header-sub">Cunningham Chain Mesh Visualization</div>
+    </div>
+    <div class="header-right">
+      © 2026 <a href="https://be.linkedin.com/in/nenadmicic" target="_blank">Nenad Mićić</a> &amp; Claude &nbsp;|&nbsp;
+      <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0</a>
+    </div>
+  </div>
+  <div class="main-area">
+    <canvas id="viz"></canvas>
+    <div class="controls">
+      <div class="n-disp">Range: <span id="nv">1…127</span></div>
+      <div class="cr"><label>Max N:</label><select id="nsel">
+        <option value="5">1…31</option><option value="6">1…63</option>
+        <option value="7" selected>1…127</option><option value="8">1…255</option>
+        <option value="9">1…511</option><option value="10">1…1023</option>
+      </select></div>
+
+      <div class="st">Base Map</div>
+      <div class="cb"><input type="checkbox" id="baseMap" checked><label>Show base map (numbered nodes)</label></div>
+      <div class="cb"><input type="checkbox" id="allLabels" checked><label>All number labels (up to 255)</label></div>
+      <div class="cb"><input type="checkbox" id="oddRays" checked><label><span class="sw" style="background:#fb923c"></span>Odd-core rays (n→2n)</label></div>
+
+      <div class="st">Cunningham Edges (structural)</div>
+      <div class="cb"><input type="checkbox" id="e1" checked><label><span class="sw" style="background:var(--cc1)"></span>1st kind edges (n→2n+1)</label></div>
+      <div class="cb"><input type="checkbox" id="e2" checked><label><span class="sw" style="background:var(--cc2)"></span>2nd kind edges (n→2n−1)</label></div>
+
+      <div class="st">Cunningham Chains (prime paths)</div>
+      <div class="cb"><input type="checkbox" id="c1" checked><label><span class="sw" style="background:var(--cc1)"></span>CC1 chains (1st kind, 2p+1)</label></div>
+      <div class="cb"><input type="checkbox" id="c2" checked><label><span class="sw" style="background:var(--cc2)"></span>CC2 chains (2nd kind, 2p−1)</label></div>
+      <div class="cb"><input type="checkbox" id="bt"><label><span class="sw" style="background:var(--green)"></span>Bi-twin chains</label></div>
+      <div class="cr"><label>Min length:</label><select id="ml"><option value="2" selected>2+</option><option value="3">3+</option><option value="4">4+</option></select></div>
+
+      <div class="st">Label Coloring (composites)</div>
+      <div class="cr"><label>Color by:</label><select id="modP">
+        <option value="0" selected>Default (gray)</option>
+        <option value="spf">Smallest prime factor</option>
+        <option value="3">mod 3</option>
+        <option value="5">mod 5</option>
+        <option value="7">mod 7</option>
+        <option value="11">mod 11</option>
+        <option value="13">mod 13</option>
+        <option value="17">mod 17</option>
+        <option value="19">mod 19</option>
+        <option value="23">mod 23</option>
+        <option value="29">mod 29</option>
+        <option value="31">mod 31</option>
+        <option value="37">mod 37</option>
+      </select></div>
+      <div class="modleg" id="modleg"></div>
+
+      <div class="st">Display</div>
+      <div class="cb"><input type="checkbox" id="shells"><label>Shell boundaries</label></div>
+      <div class="cb"><input type="checkbox" id="grid"><label>Coordinate grid</label></div>
+      <div class="cb"><input type="checkbox" id="ponly"><label>Show primes only</label></div>
+      <button class="btn gold" id="fitBtn">⊞ Fit to Screen</button>
+      <button class="btn" id="clrBtn">Clear Selection</button>
+      <div class="zoom-info">Zoom: <span id="zp">100</span>% | Scroll=zoom Drag=pan 0=reset</div>
+    </div>
+
+    <div class="chains-panel">
+      <h3>⛓ Cunningham Chains</h3>
+      <div class="ct">
+        <div class="aa" id="ta" onclick="SF('all')">All</div>
+        <div id="t1" onclick="SF('cc1')">CC1 (2p+1)</div>
+        <div id="t2" onclick="SF('cc2')">CC2 (2p−1)</div>
+      </div>
+      <div id="cl"></div>
+    </div>
+
+    <div class="info-panel" id="ip">
+      <div class="ir"><span class="il">Number:</span><span class="iv" id="iN">-</span></div>
+      <div class="ir"><span class="il">Coords:</span><span class="iv" id="iC">-</span></div>
+      <div class="ir"><span class="il">Binary:</span><span class="iv" id="iB">-</span></div>
+      <div class="ir"><span class="il">Shell:</span><span class="iv" id="iS">-</span></div>
+      <div class="ir"><span class="il">Factors:</span><span class="iv" id="iF">-</span></div>
+      <div class="ir"><span class="il">CC1:</span><span class="iv" id="i1" style="color:var(--cc1)">-</span></div>
+      <div class="ir"><span class="il">CC2:</span><span class="iv" id="i2" style="color:var(--cc2)">-</span></div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="ld" style="background:var(--cc1)"></div><span>CC1 (1st kind)</span></div>
+      <div class="legend-item"><div class="ld" style="background:var(--cc2)"></div><span>CC2 (2nd kind)</span></div>
+      <div class="legend-item"><div class="ld" style="background:#fff;opacity:.7"></div><span>Prime</span></div>
+      <div class="legend-item"><div class="ll" style="background:#fb923c"></div><span>Odd-core ray</span></div>
+      <div class="legend-item"><div class="ll" style="background:var(--cc1)"></div><span>2p+1</span></div>
+      <div class="legend-item"><div class="ll" style="background:var(--cc2)"></div><span>2p−1</span></div>
+    </div>
+    <div class="tooltip" id="tt"></div>
+  </div>
+
+<script>
+const G=id=>document.getElementById(id), canvas=G('viz'), ctx=canvas.getContext('2d');
+
+// === Small-prime colors (matching 2adic_p1_analysis) ===
+const PCOL = {
+  2:'#888888', 3:'#ff8c00', 5:'#ffd700', 7:'#00ee77',
+  11:'#00ccff', 13:'#8866ff', 17:'#dd44ff', 19:'#ff44aa',
+  23:'#ff3355', 29:'#66ffcc', 31:'#ff9966', 37:'#99ff66'
+};
+const SMALL_PRIMES = [2,3,5,7,11,13,17,19,23,29,31,37];
+
+// === Math ===
+const PC=new Map();
+function isP(n){if(n<2)return false;if(PC.has(n))return PC.get(n);if(n<4){PC.set(n,true);return true}if(n%2===0){PC.set(n,false);return false}for(let d=3;d*d<=n;d+=2){if(n%d===0){PC.set(n,false);return false}}PC.set(n,true);return true}
+const BL=n=>n<=0?0:Math.floor(Math.log2(n))+1;
+
+function CI(n){
+  if(n<=1)return{x:0,y:0};
+  const k=BL(n)-1,R=1<<k,off=n-R,s=off<<3,e=R<<1;
+  let x,y;
+  if(s<e){x=-R+s;y=R}else if(s<e*2){x=R;y=R-(s-e)}else if(s<e*3){x=R-(s-(e<<1));y=-R}else{x=-R;y=-R+(s-e*3)}
+  return{x,y};
+}
+
+// Smallest prime factor
+function spf(n){if(n<2)return 0;for(let p of SMALL_PRIMES){if(n%p===0)return p}for(let d=41;d*d<=n;d+=2){if(n%d===0)return d}return n}
+
+// Simple factorize for info panel
+function factorize(n){if(n<2)return[];const f=[];let t=n;for(let d=2;d*d<=t;d++){while(t%d===0){f.push(d);t/=d}}if(t>1)f.push(t);return f}
+
+// Odd core: n = 2^k * a, a odd → return a
+function oddCore(n){while(n>0&&n%2===0)n>>=1;return n}
+
+// === CC chains ===
+function findCC(maxN,kind){
+  const chains=[],used=new Set();
+  for(let p=2;p<=maxN;p++){
+    if(!isP(p)||used.has(p))continue;
+    const pred=kind===1?(p-1)/2:(p+1)/2;
+    if(pred>=2&&Number.isInteger(pred)&&isP(pred))continue;
+    const ch=[p];let cur=p;
+    while(true){const nx=kind===1?2*cur+1:2*cur-1;if(nx<2||!isP(nx))break;ch.push(nx);used.add(nx);cur=nx;if(nx>maxN*4)break}
+    if(ch.length>=2)chains.push(ch);
+  }
+  return chains.sort((a,b)=>b.length-a.length);
+}
+
+// === State ===
+let exp=7,N,ND,co={},PS=new Set();
+let C1=[],C2=[],M1=new Map(),M2=new Map();
+let selChain=null,selPt=null,cFilter='all',minL=2;
+let dpr=1,W,H,camX=0,camY=0,zoom=1;
+let drag=false,dsx,dsy,dcx,dcy,hov=null;
+
+function w2s(wx,wy){return{x:(wx-camX)*zoom+W/2,y:(-wy-camY)*zoom+H/2}}
+function s2w(sx,sy){return{x:(sx-W/2)/zoom+camX,y:-((sy-H/2)/zoom+camY)}}
+
+function fit(){
+  // Content lives on shells 1..(exp-1), max radius = N/2
+  const R=1<<(exp-1),pad=R*.25,ws=(R+pad)*2;
+  const uw=Math.max(200,W-574),uh=Math.max(200,H-20);
+  zoom=Math.min(uw/ws,uh/ws);camX=0;camY=0;
+}
+
+function analyze(){
+  N=1<<exp;ND=N-1;G('nv').textContent='1…'+ND;minL=parseInt(G('ml').value);
+  co={};for(let n=1;n<=N*2;n++)co[n]=CI(n);
+  PS=new Set();for(let n=2;n<=N*2;n++)if(isP(n))PS.add(n);
+  C1=findCC(N,1);C2=findCC(N,2);
+  M1=new Map();C1.forEach((ch,ci)=>ch.forEach((p,pi)=>{if(!M1.has(p))M1.set(p,[]);M1.get(p).push({ci,pi})}));
+  M2=new Map();C2.forEach((ch,ci)=>ch.forEach((p,pi)=>{if(!M2.has(p))M2.set(p,[]);M2.get(p).push({ci,pi})}));
+  if(N>256)G('allLabels').checked=false;
+  fit();updCL();updModLeg();render();
+}
+
+// === Mod legend ===
+function updModLeg(){
+  const ml=G('modleg'),v=G('modP').value;ml.innerHTML='';
+  if(v==='0')return;
+  if(v==='spf'){
+    SMALL_PRIMES.forEach(p=>{ml.innerHTML+=`<span class="modleg-item" style="color:${PCOL[p]}">${p}</span>`});
+  } else {
+    const p=parseInt(v);
+    for(let r=0;r<p;r++){
+      const hue=(360*r/p);
+      ml.innerHTML+=`<span class="modleg-item" style="color:hsl(${hue},75%,60%)">${r}</span>`;
+    }
+  }
+}
+
+// === Get composite color ===
+function compColor(n){
+  const v=G('modP').value;
+  if(v==='0')return'#444';
+  if(v==='spf'){const s=spf(n);return PCOL[s]||'#666'}
+  const p=parseInt(v),r=n%p,hue=(360*r/p);
+  return`hsl(${hue},70%,55%)`;
+}
+
+// === Chain filter/list ===
+function SF(f){
+  cFilter=f;document.querySelectorAll('.ct div').forEach(d=>d.className='');
+  if(f==='all')G('ta').className='aa';else if(f==='cc1')G('t1').className='a1';else G('t2').className='a2';
+  updCL();
+}
+
+function updCL(){
+  const cl=G('cl');cl.innerHTML='';let items=[];
+  if(cFilter!=='cc2')C1.forEach((ch,i)=>{if(ch.length>=minL)items.push({t:'cc1',ch,i,s:ch.length*1e4+(1e4-ch[0])})});
+  if(cFilter!=='cc1')C2.forEach((ch,i)=>{if(ch.length>=minL)items.push({t:'cc2',ch,i,s:ch.length*1e4+(1e4-ch[0])})});
+  items.sort((a,b)=>b.s-a.s);
+  items.slice(0,25).forEach(it=>{
+    const d=document.createElement('div');
+    const isSel=selChain&&selChain.t===it.t&&selChain.i===it.i;
+    d.className='ci'+(isSel?' sel':'');
+    const vis=it.ch.filter(p=>p<N);
+    d.innerHTML=`<div class="ch"><span class="${it.t==='cc1'?'t1':'t2'}">CC${it.ch.length} ${it.t==='cc1'?'1st':'2nd'} kind</span><span style="color:var(--dim);font-size:8px">${it.t==='cc1'?'2p+1':'2p−1'}</span></div><div class="cp">${vis.slice(0,6).join(' → ')+(vis.length>6?' → …':'')}</div>`;
+    d.onclick=()=>{
+      if(isSel)selChain=null;
+      else{selChain={t:it.t,i:it.i};const c=vis[vis.length>>1];if(c&&co[c]){camX=co[c].x;camY=-co[c].y;zoom=Math.max(zoom,4)}}
+      updCL();render();
+    };cl.appendChild(d);
+  });
+  if(!items.length)cl.innerHTML='<div style="color:var(--dim);text-align:center;padding:10px">No chains found</div>';
+}
+
+// === Render ===
+function rsz(){
+  dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  W=rect.width;H=rect.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#080810';ctx.fillRect(0,0,W,H);
+  const R=1<<(exp-1); // max shell radius for displayed numbers
+  const ss=8*zoom; // screen spacing between adjacent nodes
+
+  // Grid
+  if(G('grid').checked){
+    ctx.strokeStyle='#12122a';ctx.lineWidth=1;
+    const step=Math.max(4,R>128?16:8);
+    for(let i=-R*1.5;i<=R*1.5;i+=step){let p=w2s(i,-R*1.5),q=w2s(i,R*1.5);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();p=w2s(-R*1.5,i);q=w2s(R*1.5,i);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke()}
+  }
+
+  // Shells
+  if(G('shells').checked){
+    ctx.strokeStyle='#1e1e38';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    for(let sh=1;sh<exp;sh++){const r=1<<sh,tl=w2s(-r,r),br=w2s(r,-r);ctx.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y)}
+    ctx.setLineDash([]);
+  }
+
+  // === ODD-CORE RAYS (n→2n, radial from center) ===
+  if(G('oddRays').checked){
+    ctx.lineWidth=Math.max(.6,1*zoom);
+    // Group by odd core and draw rays
+    const rays=new Map();
+    for(let n=1;n<N;n++){
+      const oc=oddCore(n);
+      if(!rays.has(oc))rays.set(oc,[]);
+      rays.get(oc).push(n);
+    }
+    rays.forEach((nums,oc)=>{
+      if(oc===1||nums.length<2)return; // skip power-of-2 ray and singletons
+      nums.sort((a,b)=>a-b);
+      // Color: orange tones, prime cores brighter
+      const isPrimeCore=isP(oc);
+      ctx.strokeStyle=isPrimeCore?'rgba(251,146,60,0.45)':'rgba(251,146,60,0.18)';
+      ctx.lineWidth=isPrimeCore?Math.max(.7,1.2*zoom):Math.max(.4,.6*zoom);
+      ctx.beginPath();
+      for(let i=0;i<nums.length-1;i++){
+        const a=co[nums[i]],b=co[nums[i+1]];
+        if(a&&b){const p=w2s(a.x,a.y),q=w2s(b.x,b.y);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}
+      }
+      ctx.stroke();
+    });
+  }
+
+  // === CC1 EDGES (n→2n+1) — structural ===
+  if(G('e1').checked){
+    // All edges faint
+    ctx.strokeStyle='rgba(239,68,68,.12)';ctx.lineWidth=Math.max(.4,.5*zoom);ctx.beginPath();
+    for(let n=1;n<=N/2;n++){const r=(n<<1)|1;if(r>=N)continue;const a=co[n],b=co[r];if(a&&b){const p=w2s(a.x,a.y),q=w2s(b.x,b.y);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}}
+    ctx.stroke();
+    // Both-prime edges brighter
+    ctx.strokeStyle='rgba(239,68,68,.4)';ctx.lineWidth=Math.max(.7,1*zoom);ctx.beginPath();
+    for(let n=1;n<=N/2;n++){const r=(n<<1)|1;if(r>=N||!PS.has(n)||!PS.has(r))continue;const a=co[n],b=co[r];if(a&&b){const p=w2s(a.x,a.y),q=w2s(b.x,b.y);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}}
+    ctx.stroke();
+  }
+
+  // === CC2 EDGES (n→2n-1) — structural ===
+  if(G('e2').checked){
+    ctx.strokeStyle='rgba(59,130,246,.12)';ctx.lineWidth=Math.max(.4,.5*zoom);ctx.beginPath();
+    for(let n=2;n<=N/2;n++){const l=(n<<1)-1;if(l>=N||l<1)continue;const a=co[n],b=co[l];if(a&&b){const p=w2s(a.x,a.y),q=w2s(b.x,b.y);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}}
+    ctx.stroke();
+    ctx.strokeStyle='rgba(59,130,246,.4)';ctx.lineWidth=Math.max(.7,1*zoom);ctx.beginPath();
+    for(let n=2;n<=N/2;n++){const l=(n<<1)-1;if(l>=N||l<1||!PS.has(n)||!PS.has(l))continue;const a=co[n],b=co[l];if(a&&b){const p=w2s(a.x,a.y),q=w2s(b.x,b.y);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}}
+    ctx.stroke();
+  }
+
+  // === CC CHAIN PATHS (only when chain checkboxes are on) ===
+  function drawCh(ch,col,sel){
+    ctx.strokeStyle=col;ctx.lineWidth=sel?Math.max(2.5,3.5*zoom):Math.max(1.2,2*zoom);
+    ctx.globalAlpha=sel?.95:.55;
+    if(sel){ctx.shadowColor=col;ctx.shadowBlur=10}
+    ctx.beginPath();
+    for(let i=0;i<ch.length-1;i++){const a=co[ch[i]],b=co[ch[i+1]];if(a&&b&&ch[i]<N&&ch[i+1]<N){const p=w2s(a.x,a.y),q=w2s(b.x,b.y);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}}
+    ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;
+  }
+  if(G('c1').checked)C1.forEach((ch,i)=>{if(ch.length>=minL)drawCh(ch,'#ef4444',selChain?.t==='cc1'&&selChain?.i===i)});
+  if(G('c2').checked)C2.forEach((ch,i)=>{if(ch.length>=minL)drawCh(ch,'#3b82f6',selChain?.t==='cc2'&&selChain?.i===i)});
+  if(G('bt').checked){
+    const s1=new Map();C1.forEach(c=>{if(c.length>=2)s1.set(c[0],c)});
+    C2.forEach(c=>{if(c.length>=2&&s1.has(c[0])){const a=s1.get(c[0]),ml=Math.min(a.length,c.length);if(ml>=2){drawCh(a.slice(0,ml),'#34d399',false);drawCh(c.slice(0,ml),'#34d399',false)}}});
+  }
+
+  // === Selected chain primes (only from chain selection, NOT from edge toggles) ===
+  const SP=new Set();
+  if(selChain){const ch=(selChain.t==='cc1'?C1:C2)[selChain.i];if(ch)ch.forEach(p=>SP.add(p))}
+
+  // === CC chain member sets (for node marking — only when chains are ON) ===
+  const onCC1=new Set(), onCC2=new Set();
+  if(G('c1').checked) C1.forEach(ch=>{if(ch.length>=minL) ch.forEach(p=>{if(p<N) onCC1.add(p)})});
+  if(G('c2').checked) C2.forEach(ch=>{if(ch.length>=minL) ch.forEach(p=>{if(p<N) onCC2.add(p)})});
+
+  // === Visible nodes ===
+  const vis=[];
+  for(let n=1;n<N;n++){
+    if(G('ponly').checked&&!PS.has(n)&&n!==1)continue;
+    const c=co[n],s=w2s(c.x,c.y);
+    if(s.x<-50||s.x>W+50||s.y<-50||s.y>H+50)continue;
+    vis.push({n,c,s});
+  }
+
+  // === Draw nodes ===
+  const showBase=G('baseMap').checked;
+  const showAll=G('allLabels').checked&&N<=256;
+  const dotR=Math.max(1,Math.min(ss*.1,5));
+  const fontSize=Math.max(5,Math.min(ss*.42,15));
+  const circR=fontSize*.72;
+  const useModP=G('modP').value!=='0';
+
+  if(showBase){
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    for(const{n,s}of vis){
+      const prime=PS.has(n),o1=onCC1.has(n),o2=onCC2.has(n),onS=SP.has(n);
+      const showLabel=showAll||onS||o1||o2||prime||n===1;
+
+      if(showLabel&&circR>=4){
+        // Circle
+        ctx.fillStyle=onS?'rgba(255,215,0,.22)':o1?'rgba(239,68,68,.08)':o2?'rgba(59,130,246,.08)':'rgba(255,255,255,.9)';
+        ctx.strokeStyle=onS?'#ffd700':o1?'#ef4444':o2?'#3b82f6':'#555';
+        ctx.lineWidth=onS?1.5:o1||o2?1:.5;
+        ctx.beginPath();ctx.arc(s.x,s.y,circR,0,Math.PI*2);ctx.fill();ctx.stroke();
+
+        // Label
+        let fs=fontSize;const dg=String(n).length;
+        if(dg>2)fs=Math.min(fs,circR*1.6/dg*2);fs=Math.max(4,fs);
+        ctx.font=`${prime||onS?'700':'600'} ${fs}px 'JetBrains Mono',monospace`;
+
+        // Color logic: selected > CC chain member > prime > mod-p composite > gray
+        if(onS) ctx.fillStyle='#ffd700';
+        else if(o1) ctx.fillStyle='#dc2626';
+        else if(o2) ctx.fillStyle='#2563eb';
+        else if(prime) ctx.fillStyle='#d00000';
+        else if(useModP) ctx.fillStyle=compColor(n);
+        else ctx.fillStyle='#444';
+
+        ctx.fillText(String(n),s.x,s.y+.5);
+      } else {
+        // Dot only
+        let fill,r;
+        if(onS){fill='#ffd700';r=dotR*2}
+        else if(o1&&o2){fill='#34d399';r=dotR*1.5}
+        else if(o1){fill='#ef4444';r=dotR*1.4}
+        else if(o2){fill='#3b82f6';r=dotR*1.4}
+        else if(prime){fill='#fff';r=dotR*1.2}
+        else if(n===1){fill='#ffd700';r=dotR*1.4}
+        else{fill='#2a2a3a';r=dotR*.7}
+        r=Math.max(1,Math.min(r,6));
+        if(onS){ctx.shadowColor='rgba(255,215,0,.5)';ctx.shadowBlur=4}
+        ctx.fillStyle=fill;ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+      }
+      if(hov===n){ctx.strokeStyle='#ffd700';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(s.x,s.y,(showLabel&&circR>=4?circR:dotR)+3,0,Math.PI*2);ctx.stroke()}
+    }
+  } else {
+    // No base map — dots + labels above
+    for(const{n,s}of vis){
+      const prime=PS.has(n),o1=onCC1.has(n),o2=onCC2.has(n),onS=SP.has(n);
+      let fill,r;
+      if(onS){fill='#ffd700';r=dotR*2}else if(o1&&o2){fill='#34d399';r=dotR*1.5}else if(o1){fill='#ef4444';r=dotR*1.4}else if(o2){fill='#3b82f6';r=dotR*1.4}else if(prime){fill='#fff';r=dotR*1.2}else if(n===1){fill='#ffd700';r=dotR*1.4}else{fill='#2a2a3a';r=dotR*.7}
+      r=Math.max(1,Math.min(r,6));
+      if(onS){ctx.shadowColor='rgba(255,215,0,.5)';ctx.shadowBlur=4}
+      ctx.fillStyle=fill;ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+      if(hov===n){ctx.strokeStyle='#ffd700';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(s.x,s.y,r+3,0,Math.PI*2);ctx.stroke()}
+    }
+    if(fontSize>=5){
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      for(const{n,s}of vis){
+        const prime=PS.has(n),o1=onCC1.has(n),o2=onCC2.has(n),onS=SP.has(n);
+        const show=showAll||onS||o1||o2||prime||n===1;if(!show)continue;
+        let fs=fontSize;if(!prime&&n!==1&&!onS&&!o1&&!o2)fs*=.75;fs=Math.max(5,Math.min(fs,15));
+        ctx.font=`${prime||onS?'700':'400'} ${fs}px 'JetBrains Mono',monospace`;
+        let col;if(onS)col='#ffd700';else if(o1)col='#fca5a5';else if(o2)col='#93c5fd';else if(prime)col='#ccc';else if(useModP)col=compColor(n);else col='#555';
+        const r=Math.max(1,Math.min(dotR*(prime?1.2:.7),6));
+        const txt=String(n),tw=ctx.measureText(txt).width;
+        if(fs>=7){ctx.fillStyle='rgba(8,8,16,.7)';ctx.fillRect(s.x-tw/2-2,s.y-r-2-fs,tw+4,fs+1)}
+        ctx.fillStyle=col;ctx.fillText(txt,s.x,s.y-r-2);
+      }
+    }
+  }
+  G('zp').textContent=Math.round(zoom*100);
+}
+
+// === Hit test ===
+function findAt(sx,sy){const w=s2w(sx,sy),hr=Math.max(4,10/zoom);let best=null,bd=1e9;for(let n=1;n<N;n++){if(G('ponly').checked&&!PS.has(n)&&n!==1)continue;const c=co[n],dx=c.x-w.x,dy=c.y-w.y,d=Math.sqrt(dx*dx+dy*dy);if(d<hr&&d<bd){bd=d;best=n}}return best}
+
+function showInfo(n){
+  if(!n){G('ip').classList.remove('visible');return}
+  const c=co[n],prime=PS.has(n),sh=BL(n)-1;
+  G('iN').textContent=n+(prime?' ★ PRIME':'');G('iN').className='iv'+(prime?' prime':'');
+  G('iC').textContent=`(${c.x}, ${c.y})`;
+  G('iB').textContent=n.toString(2);
+  G('iS').textContent=`${sh} (${1<<sh}…${(1<<(sh+1))-1})`;
+  G('iF').textContent=prime?'prime':factorize(n).join(' × ');
+  const i1=M1.get(n);G('i1').textContent=i1?i1.map(x=>`CC${C1[x.ci].length}: ${C1[x.ci].filter(p=>p<N).join('→')}`).join(' | '):'-';
+  const i2=M2.get(n);G('i2').textContent=i2?i2.map(x=>`CC${C2[x.ci].length}: ${C2[x.ci].filter(p=>p<N).join('→')}`).join(' | '):'-';
+  G('ip').classList.add('visible');
+}
+
+// === Events ===
+canvas.addEventListener('mousedown',e=>{const rect=canvas.getBoundingClientRect(),sx=e.clientX-rect.left,sy=e.clientY-rect.top;const nd=findAt(sx,sy);if(nd){selPt=selPt===nd?null:nd;showInfo(selPt);render();return}drag=true;dsx=e.clientX;dsy=e.clientY;dcx=camX;dcy=camY});
+canvas.addEventListener('mousemove',e=>{const rect=canvas.getBoundingClientRect(),sx=e.clientX-rect.left,sy=e.clientY-rect.top;if(drag){camX=dcx-(e.clientX-dsx)/zoom;camY=dcy-(e.clientY-dsy)/zoom;render();return}const nd=findAt(sx,sy);if(nd!==hov){hov=nd;const tt=G('tt');if(nd){const prime=PS.has(nd),c=co[nd];tt.style.display='block';tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-12)+'px';let t=`<b style="color:${prime?'var(--gold)':'#aaa'}">${nd}</b>`;if(prime)t+=' ★';else t+=` <span style="color:var(--dim)">${factorize(nd).join('×')}</span>`;t+=` <span style="color:var(--dim)">(${c.x},${c.y})</span>`;const c1=M1.get(nd),c2=M2.get(nd);if(c1)t+=`<br><span style="color:var(--cc1)">CC1 len ${C1[c1[0].ci].length}</span>`;if(c2)t+=`<br><span style="color:var(--cc2)">CC2 len ${C2[c2[0].ci].length}</span>`;tt.innerHTML=t}else tt.style.display='none';render()}else if(nd){const tt=G('tt');tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-12)+'px'}});
+canvas.addEventListener('mouseup',()=>drag=false);
+canvas.addEventListener('mouseleave',()=>{drag=false;hov=null;G('tt').style.display='none'});
+canvas.addEventListener('wheel',e=>{e.preventDefault();const rect=canvas.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;const wb=s2w(mx,my);zoom=Math.max(.05,Math.min(200,zoom*(e.deltaY>0?.87:1.15)));const wa=s2w(mx,my);camX+=wb.x-wa.x;camY+=wb.y-wa.y;render()});
+
+G('nsel').onchange=()=>{exp=parseInt(G('nsel').value);selChain=null;selPt=null;analyze()};
+G('ml').onchange=()=>{minL=parseInt(G('ml').value);updCL();render()};
+G('modP').onchange=()=>{updModLeg();render()};
+['e1','e2','c1','c2','bt','shells','grid','ponly','baseMap','allLabels','oddRays'].forEach(id=>G(id).onchange=render);
+G('fitBtn').onclick=()=>{fit();render()};
+G('clrBtn').onclick=()=>{selChain=null;selPt=null;G('ip').classList.remove('visible');updCL();render()};
+
+// Touch
+let ltd=0;
+canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){drag=true;dsx=e.touches[0].clientX;dsy=e.touches[0].clientY;dcx=camX;dcy=camY}else if(e.touches.length===2){drag=false;const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;ltd=Math.sqrt(dx*dx+dy*dy)}e.preventDefault()},{passive:false});
+canvas.addEventListener('touchmove',e=>{if(e.touches.length===1&&drag){camX=dcx-(e.touches[0].clientX-dsx)/zoom;camY=dcy-(e.touches[0].clientY-dsy)/zoom;render()}else if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY,d=Math.sqrt(dx*dx+dy*dy);if(ltd>0){zoom=Math.max(.05,Math.min(200,zoom*(d/ltd)));render()}ltd=d}e.preventDefault()},{passive:false});
+canvas.addEventListener('touchend',()=>{drag=false;ltd=0});
+window.addEventListener('keydown',e=>{if(e.key==='+'||e.key==='='){zoom=Math.min(200,zoom*1.3);render()}if(e.key==='-'){zoom=Math.max(.05,zoom/1.3);render()}if(e.key==='0'){fit();render()}});
+
+window.addEventListener('resize',()=>{rsz();fit();render()});
+requestAnimationFrame(()=>{rsz();analyze()});
+</script>
+</body>
+</html>

@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Adic Tree Explorer v5 — Cunningham Chain Analysis</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        .app { display: flex; flex-direction: column; height: 100vh; }
+        .controls {
+            background: #16213e;
+            padding: 5px 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            align-items: center;
+            border-bottom: 2px solid #0f3460;
+        }
+        .control-group { display: flex; align-items: center; gap: 4px; }
+        .control-group label { font-size: 11px; color: #94a3b8; }
+        .control-group input, .control-group select {
+            background: #0f3460;
+            border: 1px solid #1e4976;
+            color: #eee;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .control-group input[type="number"] { width: 50px; }
+        .control-group input[type="checkbox"] { width: 14px; height: 14px; }
+        button {
+            background: #0f3460;
+            color: #fff;
+            border: none;
+            padding: 4px 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.15s;
+        }
+        button:hover { background: #1e4976; }
+        button.primary { background: #2563eb; }
+        button.primary:hover { background: #3b82f6; }
+        button.cc-nav { background: #7c3aed; }
+        button.cc-nav:hover { background: #8b5cf6; }
+        .nav-buttons { display: flex; gap: 2px; align-items: center; }
+        .nav-buttons button { padding: 4px 7px; font-weight: bold; }
+        .nav-sep { width: 1px; height: 18px; background: #3a3a6a; margin: 0 3px; }
+        .divider { width: 1px; height: 22px; background: #3a3a5a; }
+
+        /* Tabs */
+        .tab-bar { display: flex; gap: 2px; margin-bottom: 7px; }
+        .tab-btn {
+            flex: 1; padding: 4px 6px; font-size: 10px; font-weight: 600;
+            background: #1a1a2e; color: #94a3b8; border: 1px solid #2a2a4a;
+            border-radius: 4px 4px 0 0; cursor: pointer; transition: background 0.12s;
+        }
+        .tab-btn:hover { background: #1e2a4a; color: #cbd5e1; }
+        .tab-btn.active { background: #0f3460; color: #60a5fa; border-color: #1e4976; border-bottom-color: #0f3460; }
+        .main-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .tree-section { flex: 1; display: flex; overflow: hidden; min-height: 300px; }
+        .grid-container { flex: 1; overflow: auto; padding: 12px; background: #1a1a2e; position: relative; }
+        .mini-sidebar {
+            width: 280px;
+            background: #16213e;
+            border-left: 2px solid #0f3460;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 10px;
+        }
+        .analysis-section {
+            background: #16213e;
+            border-top: 2px solid #0f3460;
+            max-height: 38vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+        .grid { display: inline-block; position: relative; }
+        .cc-lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 5; }
+        .row { display: flex; }
+        .cell {
+            width: 50px; height: 35px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-family: monospace;
+            border: 1px solid #2a2a4a;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .cell:hover { transform: scale(1.1); z-index: 10; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .cell.empty { background: #1a1a2e; color: #333; cursor: default; }
+        .cell.selected { box-shadow: 0 0 0 3px #fff, 0 0 15px rgba(255,255,255,0.5); z-index: 20; }
+        .cell.cc-path { box-shadow: inset 0 0 0 2px #fbbf24; }
+        
+        .cell.prime { background: #1a1a1a; color: #fff; }
+        .cell.composite { background: #3a3a4a; color: #999; }
+        .cell.mersenne { background: #8b0000; color: #fff; }
+        .cell.fermat { background: #00008b; color: #fff; }
+        .cell.power2 { background: #006400; color: #fff; }
+        .cell.one { background: #ff8c00; color: #000; }
+        .cell.cc1-start { background: #dc2626; color: #fff; }
+        .cell.cc1-member { background: #ef4444; color: #fff; }
+        .cell.cc2-start { background: #2563eb; color: #fff; }
+        .cell.cc2-member { background: #3b82f6; color: #fff; }
+        .cell.safe-prime { background: #16a34a; color: #fff; }
+        
+        .cell .mod-indicator { position: absolute; bottom: 1px; font-size: 6px; letter-spacing: 1px; }
+        .mod-3 { color: #f472b6; } .mod-5 { color: #a78bfa; } .mod-7 { color: #67e8f9; }
+        .mod-11 { color: #fcd34d; } .mod-13 { color: #86efac; }
+        .cell.highlight-mod3 { border-left: 3px solid #f472b6; }
+        .cell.highlight-mod5 { border-top: 3px solid #a78bfa; }
+        .cell.highlight-mod7 { border-right: 3px solid #67e8f9; }
+        .cell.highlight-mod11 { border-bottom: 3px solid #fcd34d; }
+        .cell.highlight-mod13 { box-shadow: inset 0 0 0 2px #86efac; }
+
+        /* Analysis panels styling */
+        .analysis-panel {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .analysis-panel h3 {
+            color: #60a5fa;
+            font-size: 12px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #1e4976;
+            padding-bottom: 5px;
+        }
+        .analysis-panel h4 {
+            color: #fbbf24;
+            font-size: 11px;
+            margin: 8px 0 4px 0;
+        }
+        .no-selection {
+            text-align: center;
+            color: #6b7280;
+            padding: 40px 20px;
+            font-size: 12px;
+        }
+        .panel {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .panel h3 {
+            color: #60a5fa;
+            font-size: 12px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #1e4976;
+            padding-bottom: 5px;
+        }
+        .selected-info { font-size: 11px; }
+        .selected-info .number { font-size: 22px; font-weight: bold; color: #fbbf24; }
+        .selected-info .binary { font-family: monospace; color: #a5f3fc; word-break: break-all; font-size: 10px; }
+        .selected-info .detail { color: #94a3b8; margin: 2px 0; font-size: 10px; }
+        .selected-info .cc-info { margin-top: 8px; padding: 8px; background: #1a1a2e; border-radius: 6px; }
+        .selected-info .cc-info h4 { color: #fbbf24; font-size: 11px; margin-bottom: 5px; }
+        
+        .insight-box {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f3460 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 11px;
+        }
+        .insight-box h4 { color: #fbbf24; margin-bottom: 8px; }
+        .insight-box p { color: #cbd5e1; margin: 5px 0; line-height: 1.4; }
+        .insight-box code { background: #1a1a2e; padding: 2px 6px; border-radius: 3px; color: #a5f3fc; }
+        
+        .binary-analysis { font-family: monospace; font-size: 11px; }
+        .binary-row {
+            display: flex; align-items: center;
+            padding: 4px 6px; margin: 2px 0;
+            background: #1a1a2e; border-radius: 4px; gap: 10px;
+        }
+        .binary-row.prime-row { background: #1e3a1e; border-left: 3px solid #22c55e; }
+        .binary-row.composite-row { background: #3a1e1e; border-left: 3px solid #ef4444; }
+        .binary-row .num { min-width: 70px; color: #fbbf24; }
+        .binary-row .bin { color: #a5f3fc; flex: 1; }
+        .binary-row .bin .prefix { color: #94a3b8; }
+        .binary-row .bin .ones { color: #22c55e; font-weight: bold; }
+        .binary-row .status { min-width: 100px; text-align: right; font-size: 10px; }
+        
+        .prefix-input { display: flex; gap: 8px; margin-bottom: 10px; }
+        .prefix-input input {
+            flex: 1; background: #1a1a2e; border: 1px solid #3a3a5a;
+            color: #a5f3fc; padding: 6px 10px; border-radius: 4px; font-family: monospace;
+        }
+        .prefix-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .stat-box { background: #1a1a2e; padding: 8px; border-radius: 6px; text-align: center; }
+        .stat-box .value { font-size: 18px; font-weight: bold; color: #fbbf24; }
+        .stat-box .label { font-size: 9px; color: #94a3b8; }
+        
+        .mod-constraints { margin-top: 10px; font-size: 10px; }
+        .mod-constraint-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px; background: #1a1a2e; margin: 2px 0; border-radius: 4px;
+        }
+        .mod-constraint-row .prime-label { min-width: 50px; color: #60a5fa; }
+        .mod-constraint-row .cycle { font-family: monospace; color: #a5f3fc; }
+        .mod-constraint-row .blocked { color: #ef4444; }
+        
+        .chain-card {
+            background: #1a1a2e; border-radius: 6px;
+            padding: 6px; margin: 4px 0; cursor: pointer;
+            font-size: 9px;
+        }
+        .chain-card:hover { background: #1e2a4a; }
+        .chain-card .chain-header { display: flex; justify-content: space-between; margin-bottom: 3px; }
+        .chain-card .chain-len { color: #fbbf24; font-weight: bold; }
+        .chain-card .chain-prefix { font-family: monospace; color: #a5f3fc; }
+        .chain-card .chain-nums { font-family: monospace; color: #94a3b8; word-break: break-all; }
+        
+        .cc-list { max-height: 120px; overflow-y: auto; }
+        .cc-list-item {
+            padding: 4px; margin: 2px 0; background: #1a1a2e;
+            border-radius: 4px; cursor: pointer; font-size: 8px; font-family: monospace;
+        }
+        .cc-list-item:hover { background: #1e2a4a; }
+        .cc-list-item.active { background: #1e3a5f; border-left: 2px solid #fbbf24; }
+        .cc-type-1 { border-left: 2px solid #dc2626; }
+        .cc-type-2 { border-left: 2px solid #2563eb; }
+        
+        .cc-stats { font-size: 9px; margin-bottom: 6px; }
+        .cc-stats-row { display: flex; justify-content: space-between; margin: 2px 0; color: #94a3b8; }
+        
+        .position-info {
+            font-size: 10px; color: #6b7280; margin-top: 6px;
+            padding: 6px; background: #1a1a2e; border-radius: 4px;
+        }
+        .keyboard-hint { font-size: 9px; color: #6b7280; }
+        .keyboard-hint kbd { background: #0f3460; padding: 1px 4px; border-radius: 3px; font-family: monospace; }
+        
+        .legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 9px; }
+        .legend-item { display: flex; align-items: center; gap: 3px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+
+        /* Analyzer styling */
+        .copybox { 
+            background: #1a1a2e; padding: 4px 6px; border-radius: 3px; 
+            font-size: 9px; color: #a5f3fc; margin: 2px 0; cursor: pointer; 
+            position: relative; word-break: break-all; border: 1px solid #2a2a4a;
+            font-family: monospace;
+        }
+        .copybox:hover { background: #1e3a5f; border-color: #3b82f6; }
+        .copybox::after { content: '📋'; position: absolute; right: 4px; top: 3px; font-size: 8px; opacity: 0.5; }
+        .copybox:hover::after { opacity: 1; }
+        
+        .prop { display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px; }
+        .prop-k { color: #94a3b8; }
+        .prop-v { color: #eee; font-weight: 500; }
+        
+        .chain-trace { margin-top: 8px; }
+        .trace-row { 
+            display: flex; gap: 8px; padding: 3px 6px; margin: 2px 0; 
+            background: #1a1a2e; border-radius: 4px; font-size: 9px; font-family: monospace;
+            align-items: center;
+        }
+        .trace-row.prime { background: #1e3a1e; border-left: 3px solid #22c55e; }
+        .trace-row.composite { background: #3a1e1e; border-left: 3px solid #ef4444; }
+        .trace-row.input { box-shadow: inset 0 0 0 1px #fbbf24; }
+        .trace-row .pos { min-width: 24px; color: #6b7280; }
+        .trace-row .val { flex: 1; color: #a5f3fc; cursor: pointer; }
+        .trace-row .val:hover { color: #fff; }
+        .trace-row .bits { min-width: 40px; color: #6b7280; text-align: right; }
+        .trace-row .status { min-width: 60px; text-align: right; }
+        .trace-row .status.prime { color: #22c55e; }
+        .trace-row .status.composite { color: #ef4444; }
+        
+        .survival-bar { height: 8px; background: #1a1a2e; border-radius: 4px; margin: 6px 0; overflow: hidden; display: flex; }
+        .survival-bar .prime-seg { background: #22c55e; }
+        .survival-bar .comp-seg { background: #ef4444; }
+        
+        .result-badge {
+            display: inline-block; padding: 4px 12px; border-radius: 4px;
+            font-weight: 700; font-size: 14px; margin: 4px 4px 4px 0;
+        }
+        .result-badge.cc1 { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+        .result-badge.cc2 { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
+        .result-badge.bitwin { background: linear-gradient(135deg, #22c55e, #8b5cf6); color: #fff; }
+        
+        .residue-grid { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+        .residue-item { background: #1a1a2e; padding: 2px 6px; border-radius: 3px; font-size: 9px; }
+        .residue-item .q { color: #6b7280; }
+        .residue-item .r { color: #a5f3fc; font-weight: 600; }
+        .residue-item.immune { border: 1px solid #22c55e; }
+        
+        .factor-box { background: #1a1a2e; padding: 6px; border-radius: 4px; font-size: 9px; color: #fbbf24; word-break: break-all; margin: 4px 0; }
+        
+        .footer {
+            background: #16213e; border-top: 1px solid #0f3460;
+            text-align: center; padding: 8px; font-size: 9px; color: #6b7280;
+        }
+        .footer a { color: #60a5fa; text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="controls">
+            <div class="control-group">
+                <label>Rows:</label>
+                <input type="number" id="numRows" min="3" max="16" value="12">
+            </div>
+            <div class="control-group">
+                <label>Visible:</label>
+                <input type="number" id="visibleCols" min="10" max="200" value="40">
+            </div>
+            <div class="control-group">
+                <label>Offset:</label>
+                <input type="number" id="colOffset" min="0" value="0">
+            </div>
+            <div class="control-group">
+                <label>Size:</label>
+                <select id="cellSize">
+                    <option value="35" selected>S</option>
+                    <option value="50">M</option>
+                    <option value="70">L</option>
+                </select>
+            </div>
+            <div class="nav-buttons">
+                <button onclick="jumpLeft()" title="Jump left (Shift+←)">◀◀</button>
+                <button onclick="stepLeft()" title="Step left (←)">◀</button>
+                <button onclick="stepRight()" title="Step right (→)">▶</button>
+                <button onclick="jumpRight()" title="Jump right (Shift+→)">▶▶</button>
+                <span class="nav-sep"></span>
+                <button onclick="prevCC()" class="cc-nav" title="Prev CC (C)">◀ CC</button>
+                <button onclick="nextCC()" class="cc-nav" title="Next CC (V)">CC ▶</button>
+            </div>
+            <div class="divider"></div>
+            <div class="control-group">
+                <label>Go to:</label>
+                <input type="number" id="centerNumber" min="1" value="1" style="width:70px">
+                <button onclick="centerOnNumber()" class="primary">Go</button>
+            </div>
+            <div class="divider"></div>
+            <div class="control-group">
+                <input type="checkbox" id="showMod" checked><label for="showMod">Mod</label>
+                <input type="checkbox" id="showCC" checked><label for="showCC">CC</label>
+                <input type="checkbox" id="showCCPath"><label for="showCCPath">Path</label>
+                <input type="checkbox" id="showCCLines" checked><label for="showCCLines">Lines</label>
+            </div>
+            <div class="keyboard-hint">
+                <kbd>←</kbd><kbd>→</kbd> <kbd>C</kbd><kbd>V</kbd> CC
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="tree-section">
+                <div class="grid-container" id="gridContainer"></div>
+                <div class="mini-sidebar">
+                    <div class="panel">
+                        <h3>Legend</h3>
+                        <div class="legend">
+                            <div class="legend-item"><div class="legend-color" style="background:#dc2626"></div>CC1 Start</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div>CC1 Member</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#2563eb"></div>CC2 Start</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div>CC2 Member</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#16a34a"></div>Safe Prime</div>
+                            <div class="legend-item"><div class="legend-color" style="background:#1a1a1a;border:1px solid #555"></div>Prime</div>
+                            <div class="legend-item"><div class="legend-color" style="box-shadow:inset 0 0 0 2px #fbbf24"></div>CC Path</div>
+                            <div class="legend-item"><div class="legend-color" style="background:transparent;border-top:2px solid #ef4444"></div>CC1 Line</div>
+                            <div class="legend-item"><div class="legend-color" style="background:transparent;border-top:2px solid #3b82f6"></div>CC2 Line</div>
+                        </div>
+                    </div>
+
+                    <div class="panel" style="padding-bottom:6px;">
+                        <div class="tab-bar">
+                            <button class="tab-btn active" id="tabBtnChains" onclick="switchTab('chains')">Chains in View</button>
+                            <button class="tab-btn" id="tabBtnPrefixes" onclick="switchTab('prefixes')">Best Prefixes</button>
+                        </div>
+                        <div id="tabChains">
+                            <div class="cc-stats" id="ccStats"></div>
+                            <div class="cc-list" id="ccList" style="max-height:150px;"></div>
+                        </div>
+                        <div id="tabPrefixes" style="display:none;">
+                            <div id="longChains" style="max-height:180px;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analysis-section" id="analysisSection">
+                <div class="no-selection" id="noSelection">
+                    👆 Click any number in the 2-adic tree above to analyze it
+                </div>
+                <div class="analysis-grid" id="analysisGrid" style="display:none;"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <strong style="color:#60a5fa;">2-Adic Tree Explorer v5</strong> · 
+            © 2026 <a href="https://be.linkedin.com/in/nenadmicic" target="_blank">Nenad Mićić</a> & 
+            <a href="https://anthropic.com" target="_blank">Claude (Anthropic)</a> · 
+            <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0</a>
+        </div>
+    </div>
+
+    <script>
+        let grid = [], positionMap = new Map(), reverseMap = new Map();
+        let selectedNumber = null, numRows = 12, visibleCols = 40, colOffset = 0, totalCols = 0;
+        let ccCache = { chains1: [], chains2: [], membership: new Map(), sophieGermains: new Set(), safePrimes: new Set() };
+        let currentCCIndex = -1, allCCStarts = [], selectedCCChain = null;
+        
+        const primeCache = new Map();
+        function isPrime(n) {
+            if (n < 2) return false;
+            if (primeCache.has(n)) return primeCache.get(n);
+            if (n === 2 || n === 3) { primeCache.set(n, true); return true; }
+            if (n % 2 === 0) { primeCache.set(n, false); return false; }
+            for (let i = 3; i * i <= n; i += 2) {
+                if (n % i === 0) { primeCache.set(n, false); return false; }
+            }
+            primeCache.set(n, true);
+            return true;
+        }
+        
+        function factorize(n) {
+            if (n < 2) return [];
+            const factors = [];
+            let temp = n;
+            for (let i = 2; i * i <= temp; i++) {
+                while (temp % i === 0) { factors.push(i); temp /= i; }
+            }
+            if (temp > 1) factors.push(temp);
+            return factors;
+        }
+
+        function isMersenne(n) { const m = n + 1; return m > 0 && (m & (m - 1)) === 0 && isPrime(n); }
+        function isFermat(n) { return [3, 5, 17, 257, 65537].includes(n); }
+        function isPowerOf2(n) { return n > 0 && (n & (n - 1)) === 0; }
+        
+        function getCunninghamChain1(start) {
+            if (!isPrime(start)) return null;
+            const chain = [start];
+            let current = start;
+            while (true) {
+                const next = 2 * current + 1;
+                if (!isPrime(next) || next > 10000000) break;
+                chain.push(next);
+                current = next;
+            }
+            const prev = (start - 1) / 2;
+            if (prev > 1 && Number.isInteger(prev) && isPrime(prev)) return null;
+            return chain.length >= 2 ? chain : null;
+        }
+        
+        function getCunninghamChain2(start) {
+            if (!isPrime(start)) return null;
+            const chain = [start];
+            let current = start;
+            while (true) {
+                const next = 2 * current - 1;
+                if (next < 2 || !isPrime(next) || next > 10000000) break;
+                chain.push(next);
+                current = next;
+            }
+            const prev = (start + 1) / 2;
+            if (prev > 1 && Number.isInteger(prev) && isPrime(prev)) return null;
+            return chain.length >= 2 ? chain : null;
+        }
+        
+        function isSophieGermain(n) { return isPrime(n) && isPrime(2 * n + 1); }
+        function isSafePrime(n) { if (!isPrime(n)) return false; const sg = (n - 1) / 2; return Number.isInteger(sg) && isPrime(sg); }
+        
+        function buildCCCache() {
+            ccCache = { chains1: [], chains2: [], membership: new Map(), sophieGermains: new Set(), safePrimes: new Set() };
+            const maxN = 1 << numRows;
+            for (let n = 2; n < maxN; n++) {
+                if (!isPrime(n)) continue;
+                if (isSophieGermain(n)) ccCache.sophieGermains.add(n);
+                if (isSafePrime(n)) ccCache.safePrimes.add(n);
+                const chain1 = getCunninghamChain1(n);
+                if (chain1) {
+                    ccCache.chains1.push({ start: n, chain: chain1 });
+                    chain1.forEach((p, idx) => {
+                        if (!ccCache.membership.has(p)) ccCache.membership.set(p, []);
+                        ccCache.membership.get(p).push({ type: 1, chain: chain1, position: idx, isStart: idx === 0 });
+                    });
+                }
+                const chain2 = getCunninghamChain2(n);
+                if (chain2) {
+                    ccCache.chains2.push({ start: n, chain: chain2 });
+                    chain2.forEach((p, idx) => {
+                        if (!ccCache.membership.has(p)) ccCache.membership.set(p, []);
+                        ccCache.membership.get(p).push({ type: 2, chain: chain2, position: idx, isStart: idx === 0 });
+                    });
+                }
+            }
+            allCCStarts = [];
+            ccCache.chains1.forEach(c => allCCStarts.push({ start: c.start, type: 1, chain: c.chain }));
+            ccCache.chains2.forEach(c => allCCStarts.push({ start: c.start, type: 2, chain: c.chain }));
+            allCCStarts.sort((a, b) => a.start - b.start);
+        }
+
+        function drawCCLines(gridDiv, cellSize) {
+            const cellW = cellSize;
+            const cellH = Math.round(cellSize * 0.7);
+            const svgW = visibleCols * cellW;
+            const svgH = numRows * cellH;
+            const inset = Math.max(2, Math.round(cellW / 8));
+            const dotR = Math.max(1.5, Math.min(3, cellW / 12));
+            const lw = Math.max(1, Math.min(2.5, cellW / 16));
+
+            const ns = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('class', 'cc-lines-svg');
+            svg.setAttribute('width', svgW);
+            svg.setAttribute('height', svgH);
+            svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+
+            // Helper: get corner position for a cell in visible coords
+            function cornerPos(row, col, kind) {
+                const visCol = col - colOffset;
+                if (visCol < 0 || visCol >= visibleCols) return null;
+                if (kind === 1) {
+                    // CC1: right-top corner
+                    return { x: visCol * cellW + cellW - inset, y: row * cellH + inset };
+                } else {
+                    // CC2: left-top corner
+                    return { x: visCol * cellW + inset, y: row * cellH + inset };
+                }
+            }
+
+            // Collect all chains
+            const allChains = [
+                ...ccCache.chains1.map(c => ({ type: 1, chain: c.chain })),
+                ...ccCache.chains2.map(c => ({ type: 2, chain: c.chain }))
+            ];
+
+            for (const { type, chain } of allChains) {
+                if (chain.length < 2) continue;
+                const lineCol = type === 1 ? '#ef4444' : '#3b82f6';
+                const dotCol = type === 1 ? '#fca5a5' : '#93c5fd';
+
+                // Find positions of chain members in the grid
+                const pts = [];
+                for (const n of chain) {
+                    const pos = positionMap.get(n);
+                    if (pos) {
+                        const corner = cornerPos(pos.row, pos.col, type);
+                        if (corner) pts.push({ ...corner, n, row: pos.row, col: pos.col });
+                        else pts.push(null);
+                    } else {
+                        pts.push(null);
+                    }
+                }
+
+                // Draw line segments
+                for (let i = 0; i < pts.length - 1; i++) {
+                    const a = pts[i], b = pts[i + 1];
+                    if (!a || !b) continue;
+                    const line = document.createElementNS(ns, 'line');
+                    line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+                    line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+                    line.setAttribute('stroke', lineCol);
+                    line.setAttribute('stroke-width', lw);
+                    line.setAttribute('stroke-opacity', '0.8');
+                    line.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(line);
+                }
+
+                // Draw dots
+                for (const pt of pts) {
+                    if (!pt) continue;
+                    const circ = document.createElementNS(ns, 'circle');
+                    circ.setAttribute('cx', pt.x); circ.setAttribute('cy', pt.y);
+                    circ.setAttribute('r', dotR);
+                    circ.setAttribute('fill', dotCol);
+                    circ.setAttribute('stroke', lineCol);
+                    circ.setAttribute('stroke-width', Math.max(0.5, lw * 0.4));
+                    circ.setAttribute('opacity', '0.9');
+                    svg.appendChild(circ);
+                }
+
+                // Badge at chain start if visible
+                if (pts[0]) {
+                    const p = pts[0];
+                    const badge = `CC${type}\u00b7${chain.length}`;
+                    const fsize = Math.max(6, Math.min(10, cellW / 4));
+                    const tw = badge.length * fsize * 0.55;
+                    const bpad = 2;
+                    const bx = p.col === colOffset ? p.x : p.x - tw / 2;
+                    const by = p.y - dotR - fsize - bpad * 2;
+
+                    const rect = document.createElementNS(ns, 'rect');
+                    rect.setAttribute('x', bx - bpad);
+                    rect.setAttribute('y', by);
+                    rect.setAttribute('width', tw + bpad * 2);
+                    rect.setAttribute('height', fsize + bpad * 2);
+                    rect.setAttribute('fill', lineCol);
+                    rect.setAttribute('rx', '2');
+                    rect.setAttribute('opacity', '0.85');
+                    svg.appendChild(rect);
+
+                    const text = document.createElementNS(ns, 'text');
+                    text.setAttribute('x', bx + tw / 2);
+                    text.setAttribute('y', by + fsize / 2 + bpad);
+                    text.setAttribute('font-size', fsize);
+                    text.setAttribute('fill', '#fff');
+                    text.setAttribute('font-weight', '700');
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'middle');
+                    text.setAttribute('font-family', 'monospace');
+                    text.textContent = badge;
+                    svg.appendChild(text);
+                }
+            }
+
+            gridDiv.appendChild(svg);
+        }
+
+        function getNumberClass(n) {
+            if (n === 1) return 'one';
+            if (isPowerOf2(n)) return 'power2';
+            if (isFermat(n)) return 'fermat';
+            if (isMersenne(n)) return 'mersenne';
+            const showCC = document.getElementById('showCC').checked;
+            if (showCC) {
+                const ccInfo = ccCache.membership.get(n);
+                if (ccInfo && ccInfo.length > 0) {
+                    const cc1 = ccInfo.find(c => c.type === 1);
+                    const cc2 = ccInfo.find(c => c.type === 2);
+                    if (cc1 && cc1.isStart) return 'cc1-start';
+                    if (cc2 && cc2.isStart) return 'cc2-start';
+                    if (cc1) return 'cc1-member';
+                    if (cc2) return 'cc2-member';
+                }
+                if (ccCache.safePrimes.has(n)) return 'safe-prime';
+            }
+            if (isPrime(n)) return 'prime';
+            return 'composite';
+        }
+
+        function toBinary(n) { return n.toString(2); }
+        function trailingZeros(n) { if (n === 0) return 0; let c = 0; while ((n & 1) === 0) { c++; n >>= 1; } return c; }
+        function trailingOnes(n) { return trailingZeros(n + 1); }
+
+        function buildGrid() {
+            totalCols = 1 << (numRows - 1);
+            grid = [];
+            positionMap.clear();
+            reverseMap.clear();
+            for (let row = 0; row < numRows; row++) grid.push(new Array(totalCols).fill(null));
+            const bottomRow = numRows - 1;
+            const bottomStart = 1 << (numRows - 1);
+            for (let col = 0; col < totalCols; col++) {
+                const n = bottomStart + col;
+                grid[bottomRow][col] = n;
+                positionMap.set(n, {row: bottomRow, col});
+                reverseMap.set(`${bottomRow},${col}`, n);
+            }
+            for (let row = bottomRow; row > 0; row--) {
+                for (let col = 0; col < totalCols; col++) {
+                    const n = grid[row][col];
+                    if (n !== null && n % 2 === 0) {
+                        const parent = n / 2;
+                        grid[row - 1][col] = parent;
+                        positionMap.set(parent, {row: row - 1, col});
+                        reverseMap.set(`${row - 1},${col}`, parent);
+                    }
+                }
+            }
+            document.getElementById('colOffset').max = Math.max(0, totalCols - visibleCols);
+            buildCCCache();
+        }
+
+        function findColumnForNumber(target) {
+            let n = target;
+            while (n % 2 === 0) n /= 2;
+            const pos = positionMap.get(target);
+            if (pos) return pos.col;
+            const minBottom = 1 << (numRows - 1);
+            const maxBottom = (1 << numRows) - 1;
+            for (let k = 0; k < numRows; k++) {
+                const candidate = (1 << k) * n;
+                if (candidate >= minBottom && candidate <= maxBottom) return candidate - minBottom;
+            }
+            return 0;
+        }
+
+        function jumpLeft() { colOffset = Math.max(0, colOffset - Math.floor(visibleCols / 2)); document.getElementById('colOffset').value = colOffset; render(); }
+        function jumpRight() { colOffset = Math.min(totalCols - visibleCols, colOffset + Math.floor(visibleCols / 2)); colOffset = Math.max(0, colOffset); document.getElementById('colOffset').value = colOffset; render(); }
+        function stepLeft() { colOffset = Math.max(0, colOffset - 5); document.getElementById('colOffset').value = colOffset; render(); }
+        function stepRight() { colOffset = Math.min(totalCols - visibleCols, colOffset + 5); colOffset = Math.max(0, colOffset); document.getElementById('colOffset').value = colOffset; render(); }
+        
+        function centerOnNumber() {
+            const target = parseInt(document.getElementById('centerNumber').value) || 1;
+            const col = findColumnForNumber(target);
+            colOffset = Math.max(0, Math.min(totalCols - visibleCols, col - Math.floor(visibleCols / 2)));
+            document.getElementById('colOffset').value = colOffset;
+            render();
+            const pos = positionMap.get(target);
+            if (pos) selectNumber(target, pos.row, pos.col);
+        }
+        
+        function findNearestCCIndex() {
+            const centerCol = colOffset + Math.floor(visibleCols / 2);
+            let bestIdx = 0, bestDist = Infinity;
+            for (let i = 0; i < allCCStarts.length; i++) {
+                const dist = Math.abs(findColumnForNumber(allCCStarts[i].start) - centerCol);
+                if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+            }
+            return bestIdx;
+        }
+        
+        function prevCC() {
+            if (allCCStarts.length === 0) return;
+            if (currentCCIndex < 0) currentCCIndex = findNearestCCIndex();
+            currentCCIndex = (currentCCIndex - 1 + allCCStarts.length) % allCCStarts.length;
+            const cc = allCCStarts[currentCCIndex];
+            selectedCCChain = cc.chain;
+            document.getElementById('centerNumber').value = cc.start;
+            centerOnNumber();
+        }
+        
+        function nextCC() {
+            if (allCCStarts.length === 0) return;
+            if (currentCCIndex < 0) currentCCIndex = findNearestCCIndex();
+            currentCCIndex = (currentCCIndex + 1) % allCCStarts.length;
+            const cc = allCCStarts[currentCCIndex];
+            selectedCCChain = cc.chain;
+            document.getElementById('centerNumber').value = cc.start;
+            centerOnNumber();
+        }
+        
+        function goToCC(idx) {
+            currentCCIndex = idx;
+            const cc = allCCStarts[idx];
+            selectedCCChain = cc.chain;
+            document.getElementById('centerNumber').value = cc.start;
+            centerOnNumber();
+        }
+        
+        // Binary Prefix Analysis (now a helper, UI removed)
+        function analyzePrefix() {
+            // No-op since we removed the prefix explorer UI
+        }
+        
+        function updateModConstraints(prefixStr) {
+            // No-op since we removed the mod constraints UI
+        }
+        
+        function findLongestChains() {
+            const results = [];
+            
+            for (let prefix = 2; prefix < 128; prefix++) {
+                const prefixStr = prefix.toString(2);
+                let chainLen = 0;
+                const chain = [];
+                
+                for (let ones = 1; ones <= 25; ones++) {
+                    const n = (prefix << ones) | ((1 << ones) - 1);
+                    if (n > 50000000) break;
+                    if (isPrime(n)) {
+                        if (chainLen === ones - 1) { chainLen = ones; chain.push(n); }
+                    } else break;
+                }
+                
+                if (chainLen >= 3) results.push({ prefix, prefixStr, chainLen, chain });
+            }
+            
+            results.sort((a, b) => b.chainLen - a.chainLen);
+            
+            const longChainsEl = document.getElementById('longChains');
+            if (longChainsEl) {
+                longChainsEl.innerHTML = results.slice(0, 6).map(r => `
+                    <div class="chain-card" onclick="selectPrefixChain('${r.prefixStr}')">
+                        <div class="chain-header">
+                            <span class="chain-len">CC${r.chainLen}</span>
+                            <span class="chain-prefix">${r.prefixStr}...</span>
+                        </div>
+                        <div class="chain-nums">${r.chain.slice(0, 4).join('→')}${r.chain.length > 4 ? '...' : ''}</div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function selectPrefixChain(prefixStr) {
+            // Build the chain and center on first member
+            let chainLen = 0;
+            const chain = [];
+            const prefix = parseInt(prefixStr, 2);
+            
+            for (let ones = 1; ones <= 25; ones++) {
+                const n = (prefix << ones) | ((1 << ones) - 1);
+                if (n > 50000000) break;
+                if (isPrime(n)) {
+                    if (chainLen === ones - 1) { chainLen = ones; chain.push(n); }
+                } else break;
+            }
+            
+            selectedCCChain = chain;
+            if (chain.length > 0) {
+                document.getElementById('centerNumber').value = chain[0];
+                centerOnNumber();
+            }
+        }
+
+        function render() {
+            numRows = parseInt(document.getElementById('numRows').value) || 12;
+            visibleCols = parseInt(document.getElementById('visibleCols').value) || 40;
+            colOffset = parseInt(document.getElementById('colOffset').value) || 0;
+            const cellSize = parseInt(document.getElementById('cellSize').value) || 50;
+            const showMod = document.getElementById('showMod').checked;
+            const showCCPath = document.getElementById('showCCPath').checked;
+
+            buildGrid();
+            colOffset = Math.min(colOffset, Math.max(0, totalCols - visibleCols));
+            document.getElementById('colOffset').value = colOffset;
+
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'grid';
+
+            let ccPathPositions = new Set();
+            if (showCCPath && selectedCCChain) {
+                for (const n of selectedCCChain) {
+                    const pos = positionMap.get(n);
+                    if (pos) ccPathPositions.add(`${pos.row},${pos.col}`);
+                }
+            }
+
+            for (let row = 0; row < numRows; row++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+
+                for (let visCol = 0; visCol < visibleCols; visCol++) {
+                    const col = colOffset + visCol;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.width = cellSize + 'px';
+                    cell.style.height = Math.round(cellSize * 0.7) + 'px';
+                    cell.style.fontSize = Math.max(8, Math.round(cellSize / 5)) + 'px';
+
+                    const n = grid[row]?.[col];
+                    if (n === null || n === undefined) {
+                        cell.classList.add('empty');
+                    } else {
+                        cell.classList.add(getNumberClass(n));
+                        cell.textContent = n;
+                        cell.onclick = () => selectNumber(n, row, col);
+
+                        if (showMod) {
+                            let mods = [];
+                            if (n % 3 === 0) { cell.classList.add('highlight-mod3'); mods.push('<span class="mod-3">3</span>'); }
+                            if (n % 5 === 0) { cell.classList.add('highlight-mod5'); mods.push('<span class="mod-5">5</span>'); }
+                            if (n % 7 === 0) { cell.classList.add('highlight-mod7'); mods.push('<span class="mod-7">7</span>'); }
+                            if (n % 11 === 0) { cell.classList.add('highlight-mod11'); mods.push('<span class="mod-11">11</span>'); }
+                            if (n % 13 === 0) { cell.classList.add('highlight-mod13'); mods.push('<span class="mod-13">13</span>'); }
+                            if (mods.length > 0) {
+                                const ind = document.createElement('div');
+                                ind.className = 'mod-indicator';
+                                ind.innerHTML = mods.join('');
+                                cell.appendChild(ind);
+                            }
+                        }
+
+                        if (ccPathPositions.has(`${row},${col}`)) cell.classList.add('cc-path');
+                        if (n === selectedNumber) cell.classList.add('selected');
+                    }
+                    rowDiv.appendChild(cell);
+                }
+                gridDiv.appendChild(rowDiv);
+            }
+
+            container.appendChild(gridDiv);
+            
+            // Draw CC connection lines as SVG overlay
+            if (document.getElementById('showCCLines').checked) {
+                drawCCLines(gridDiv, cellSize);
+            }
+            
+            const hint = document.createElement('div');
+            hint.className = 'position-info';
+            hint.innerHTML = `Cols ${colOffset}-${colOffset + visibleCols - 1} of ${totalCols} | Row ${numRows}: ${1 << (numRows-1)} to ${(1 << numRows) - 1}`;
+            container.appendChild(hint);
+            
+            updateCCPanel();
+        }
+        
+        function updateCCPanel() {
+            const visibleCCs = [];
+            for (let i = 0; i < allCCStarts.length; i++) {
+                const col = findColumnForNumber(allCCStarts[i].start);
+                if (col >= colOffset && col < colOffset + visibleCols) visibleCCs.push({ ...allCCStarts[i], index: i });
+            }
+            
+            document.getElementById('ccStats').innerHTML = `
+                <div class="cc-stats-row"><span>CC1 chains:</span><span>${ccCache.chains1.length}</span></div>
+                <div class="cc-stats-row"><span>CC2 chains:</span><span>${ccCache.chains2.length}</span></div>
+                <div class="cc-stats-row"><span>In view:</span><span>${visibleCCs.length}</span></div>
+            `;
+            
+            document.getElementById('ccList').innerHTML = visibleCCs.slice(0, 10).map(cc => `
+                <div class="cc-list-item cc-type-${cc.type} ${currentCCIndex === cc.index ? 'active' : ''}" onclick="goToCC(${cc.index})">
+                    CC${cc.type}: ${cc.chain.join('→')}
+                </div>
+            `).join('') || '<div style="color:#6b7280;padding:8px;">None in view</div>';
+        }
+
+        function selectNumber(n, row, col) {
+            selectedNumber = n;
+            document.getElementById('noSelection').style.display = 'none';
+            document.getElementById('analysisGrid').style.display = 'grid';
+            
+            // Get CC info
+            const ccInfo = ccCache.membership.get(n);
+            if (ccInfo && ccInfo.length > 0) {
+                selectedCCChain = ccInfo[0].chain;
+            }
+            
+            // Analyze the number
+            const analysis = analyzeNumber(n);
+            
+            // Build analysis HTML
+            let html = '';
+            
+            // Panel 1: Overview
+            html += `<div class="analysis-panel">
+                <h3>📊 Overview</h3>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    ${analysis.cc1Len > 0 ? `<span class="result-badge cc1">CC${analysis.cc1Len} 1st</span>` : ''}
+                    ${analysis.cc2Len > 0 ? `<span class="result-badge cc2">CC${analysis.cc2Len} 2nd</span>` : ''}
+                    ${analysis.cc1Len >= 2 && analysis.cc1Len === analysis.cc2Len ? `<span class="result-badge bitwin">BI-TWIN</span>` : ''}
+                </div>
+                <div class="copybox" onclick="navigator.clipboard.writeText('${n}')" title="Click to copy">
+                    <span style="color:#6b7280;">dec:</span> ${n}
+                </div>
+                <div class="copybox" onclick="navigator.clipboard.writeText('0x${n.toString(16).toUpperCase()}')" title="Click to copy">
+                    <span style="color:#6b7280;">hex:</span> 0x${n.toString(16).toUpperCase()}
+                </div>
+                <div class="copybox" onclick="navigator.clipboard.writeText('${n.toString(2)}')" title="Click to copy">
+                    <span style="color:#6b7280;">bin:</span> ${n.toString(2)}
+                </div>
+                <div class="prop"><span class="prop-k">Status</span><span class="prop-v" style="color:${analysis.isPrime?'#22c55e':'#ef4444'}">${analysis.isPrime?'PRIME':'COMPOSITE'}</span></div>
+                <div class="prop"><span class="prop-k">Bits</span><span class="prop-v">${analysis.bits}</span></div>
+                <div class="prop"><span class="prop-k">Grid Position</span><span class="prop-v">Row ${row + 1}, Col ${col}</span></div>
+                ${!analysis.isPrime ? `<div class="factor-box">${analysis.factorStr}</div>` : ''}
+            </div>`;
+            
+            // Panel 2: 2-adic Properties
+            html += `<div class="analysis-panel">
+                <h3>📐 2-Adic Properties</h3>
+                <div class="prop"><span class="prop-k">ν₂(n−1)</span><span class="prop-v">${analysis.v2m1}</span></div>
+                <div class="prop"><span class="prop-k">ν₂(n+1)</span><span class="prop-v">${analysis.v2p1}</span></div>
+                <div class="prop"><span class="prop-k">Trailing 0s</span><span class="prop-v">${trailingZeros(n)}</span></div>
+                <div class="prop"><span class="prop-k">Trailing 1s</span><span class="prop-v">${trailingOnes(n)}</span></div>
+                <div class="prop"><span class="prop-k">Popcount</span><span class="prop-v">${analysis.popcount} (${(analysis.popcount/analysis.bits*100).toFixed(1)}%)</span></div>
+                <h4>Residues mod small primes</h4>
+                <div class="residue-grid">
+                    ${[3,5,7,11,13,17,19,23].map(q => {
+                        const r = n % q;
+                        const immune = r !== 0 && (q === 3 || q === 5 || q === 7 || q === 11 || q === 13);
+                        return `<div class="residue-item ${immune?'immune':''}"><span class="q">%${q}=</span><span class="r">${r}</span></div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+            
+            // Panel 3: First Kind Chain Trace
+            html += `<div class="analysis-panel">
+                <h3>🔴 First Kind Trace (2p+1)</h3>
+                ${renderChainTrace(analysis.trace1, 'first')}
+            </div>`;
+            
+            // Panel 4: Second Kind Chain Trace  
+            html += `<div class="analysis-panel">
+                <h3>🔵 Second Kind Trace (2p−1)</h3>
+                ${renderChainTrace(analysis.trace2, 'second')}
+            </div>`;
+            
+            document.getElementById('analysisGrid').innerHTML = html;
+            render();
+        }
+        
+        function analyzeNumber(n) {
+            const isPrm = isPrime(n);
+            const bits = n.toString(2).length;
+            const popcount = n.toString(2).split('1').length - 1;
+            
+            // Factorization for composites
+            let factorStr = '';
+            if (!isPrm) {
+                const factors = factorize(n);
+                const grouped = {};
+                factors.forEach(f => grouped[f] = (grouped[f] || 0) + 1);
+                factorStr = Object.entries(grouped).map(([p, e]) => e > 1 ? `${p}^${e}` : p).join(' × ');
+            }
+            
+            // 2-adic valuations
+            const v2m1 = n > 1 ? trailingZeros(n - 1) : 0;
+            const v2p1 = trailingZeros(n + 1);
+            
+            // Chain traces
+            const trace1 = traceChain(n, 'first', 12);
+            const trace2 = traceChain(n, 'second', 12);
+            
+            return {
+                isPrime: isPrm,
+                bits,
+                popcount,
+                factorStr,
+                v2m1,
+                v2p1,
+                trace1,
+                trace2,
+                cc1Len: trace1.achievedLen,
+                cc2Len: trace2.achievedLen
+            };
+        }
+        
+        function traceChain(n, kind, maxLen) {
+            const positions = [];
+            let cur = n;
+            let achievedLen = 0;
+            let chainBroken = false;
+            
+            for (let pos = 0; pos <= maxLen; pos++) {
+                const prm = isPrime(cur);
+                const bits = cur.toString(2).length;
+                
+                let marker = '';
+                if (!chainBroken && prm) {
+                    achievedLen = pos + 1;
+                } else if (!chainBroken && !prm) {
+                    chainBroken = true;
+                    marker = 'BREAK';
+                }
+                
+                // Find smallest factor for composites
+                let smallestFactor = null;
+                if (!prm) {
+                    for (let f = 2; f * f <= cur && f < 1000; f++) {
+                        if (cur % f === 0) { smallestFactor = f; break; }
+                    }
+                }
+                
+                positions.push({
+                    pos,
+                    val: cur,
+                    bits,
+                    prime: prm,
+                    marker,
+                    smallestFactor,
+                    isInput: pos === 0
+                });
+                
+                cur = kind === 'first' ? 2 * cur + 1 : 2 * cur - 1;
+                if (cur > Number.MAX_SAFE_INTEGER) break;
+            }
+            
+            return { positions, achievedLen };
+        }
+        
+        function renderChainTrace(trace, kind) {
+            const primeCount = trace.positions.filter(p => p.prime).length;
+            const total = trace.positions.length;
+            
+            let html = `<div style="margin-bottom:6px;font-size:11px;">
+                <strong style="color:${trace.achievedLen >= 4 ? '#22c55e' : trace.achievedLen >= 2 ? '#fbbf24' : '#ef4444'}">
+                    CC${trace.achievedLen}
+                </strong>
+                <span style="color:#6b7280;margin-left:8px;">${primeCount}/${total} positions prime</span>
+            </div>`;
+            
+            // Survival bar
+            html += `<div class="survival-bar">`;
+            trace.positions.forEach(p => {
+                html += `<div class="${p.prime ? 'prime-seg' : 'comp-seg'}" style="flex:1;"></div>`;
+            });
+            html += `</div>`;
+            
+            // Position rows
+            html += `<div class="chain-trace" style="max-height:180px;overflow-y:auto;">`;
+            trace.positions.forEach(p => {
+                const rowClass = p.prime ? 'prime' : 'composite';
+                const inputClass = p.isInput ? ' input' : '';
+                html += `<div class="trace-row ${rowClass}${inputClass}">
+                    <span class="pos">${p.pos}</span>
+                    <span class="val" onclick="navigator.clipboard.writeText('${p.val}')" title="Click to copy">${p.val}</span>
+                    <span class="bits">${p.bits}b</span>
+                    <span class="status ${p.prime ? 'prime' : 'composite'}">
+                        ${p.prime ? '✓ PRIME' : `÷${p.smallestFactor || '?'}`}
+                        ${p.marker === 'BREAK' ? ' ◀' : ''}
+                    </span>
+                </div>`;
+            });
+            html += `</div>`;
+            
+            return html;
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabChains').style.display   = tab === 'chains'   ? '' : 'none';
+            document.getElementById('tabPrefixes').style.display = tab === 'prefixes' ? '' : 'none';
+            document.getElementById('tabBtnChains').classList.toggle('active',   tab === 'chains');
+            document.getElementById('tabBtnPrefixes').classList.toggle('active', tab === 'prefixes');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.key === 'ArrowLeft') { e.shiftKey ? jumpLeft() : stepLeft(); e.preventDefault(); }
+            else if (e.key === 'ArrowRight') { e.shiftKey ? jumpRight() : stepRight(); e.preventDefault(); }
+            else if (e.key === 'c' || e.key === 'C') { prevCC(); e.preventDefault(); }
+            else if (e.key === 'v' || e.key === 'V') { nextCC(); e.preventDefault(); }
+        });
+
+        document.getElementById('numRows').addEventListener('change', () => { render(); findLongestChains(); });
+        document.getElementById('visibleCols').addEventListener('change', render);
+        document.getElementById('colOffset').addEventListener('change', () => { colOffset = parseInt(document.getElementById('colOffset').value) || 0; render(); });
+        document.getElementById('cellSize').addEventListener('change', render);
+        document.getElementById('showMod').addEventListener('change', render);
+        document.getElementById('showCC').addEventListener('change', render);
+        document.getElementById('showCCPath').addEventListener('change', render);
+        document.getElementById('showCCLines').addEventListener('change', render);
+        document.getElementById('centerNumber').addEventListener('keypress', (e) => { if (e.key === 'Enter') centerOnNumber(); });
+
+        render();
+        findLongestChains();
+    </script>
+</body>
+</html>

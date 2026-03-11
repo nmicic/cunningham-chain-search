@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CC Immunization Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --bg4: #30363d;
+    --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+    --accent: #58a6ff; --green: #3fb950; --orange: #d29922;
+    --red: #f85149; --purple: #bc8cff; --teal: #39d353;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    padding: 20px; max-width: 1440px; margin: 0 auto;
+  }
+  h1 { font-size: 26px; font-weight: 600; }
+  h2 { font-size: 18px; font-weight: 600; margin: 28px 0 10px; color: var(--accent);
+       border-bottom: 1px solid var(--bg3); padding-bottom: 6px; }
+  .subtitle { color: var(--text2); font-size: 13px; margin-bottom: 20px; }
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--bg3); border-radius: 6px;
+    padding: 12px 16px; min-width: 140px; flex: 1;
+  }
+  .stat-card .label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 24px; font-weight: 700; margin-top: 2px; }
+  .stat-card .detail { font-size: 11px; color: var(--text2); }
+  .panel {
+    background: var(--bg2); border: 1px solid var(--bg3); border-radius: 6px;
+    padding: 16px; margin-bottom: 20px; overflow-x: auto;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--bg3);
+       color: var(--text2); font-weight: 600; font-size: 10px; text-transform: uppercase;
+       letter-spacing: 0.5px; white-space: nowrap; position: sticky; top: 0; background: var(--bg2); }
+  td { padding: 5px 8px; border-bottom: 1px solid var(--bg3); white-space: nowrap; }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  canvas { display: block; }
+  .legend { display: flex; align-items: center; gap: 8px; margin-top: 8px; justify-content: center;
+            font-size: 11px; color: var(--text2); flex-wrap: wrap; }
+  .note { font-size: 11px; color: var(--text3); margin-top: 6px; font-style: italic; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media (max-width: 1000px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .tag-immune { background: rgba(63,185,80,0.15); color: var(--green); }
+  .tag-coset  { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .tag-beyond { background: rgba(210,153,34,0.15); color: var(--orange); }
+  .formula { font-family: 'Courier New', monospace; background: var(--bg3); padding: 1px 5px;
+             border-radius: 3px; font-size: 12px; }
+  #loadSection {
+    display: flex; align-items: center; gap: 16px; padding: 20px;
+    background: var(--bg2); border: 2px dashed var(--bg4); border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  #loadSection input[type="file"] { color: var(--text2); }
+  #loadSection .or { color: var(--text3); font-size: 13px; }
+  #dashboard { display: none; }
+  .combo-bar { display: flex; height: 20px; border-radius: 3px; overflow: hidden; margin: 2px 0; }
+  .combo-bar div { height: 100%; }
+  .pct-cell { text-align: right; font-family: monospace; font-size: 11px; }
+  .highlight { color: var(--green); font-weight: 600; }
+  .dim { color: var(--text3); }
+</style>
+</head>
+<body>
+
+<h1>Cunningham Chain Immunization Dashboard</h1>
+<p class="subtitle">Small-prime divisibility analysis for first-kind CC roots</p>
+
+<div id="loadSection">
+  <div>
+    <label style="font-size:13px;color:var(--text2)">Load analysis JSON:</label><br>
+    <input type="file" id="fileInput" accept=".json">
+  </div>
+  <span class="or">produced by <code>cc_immunization_analysis</code> — or auto-loaded from <code>immunization_all.json</code> if present</span>
+</div>
+
+<div id="dashboard">
+
+<!-- Stats -->
+<div class="stats-row" id="statsRow"></div>
+
+<!-- Section 1: Heatmap -->
+<h2>1. Immunization Heatmap &mdash; immune% by CC Length x Prime</h2>
+<div class="panel">
+  <canvas id="heatmapImm"></canvas>
+  <div class="legend">
+    <span>0%</span>
+    <canvas id="legendBar" width="200" height="12"></canvas>
+    <span>100%</span>
+    <span style="margin-left:12px;font-size:10px">
+      Immune = <span class="formula">(p+1) &equiv; 0 mod q</span> &mdash;
+      chain can never be killed by q
+    </span>
+  </div>
+</div>
+
+<!-- Section 2: Combination fingerprints -->
+<h2>2. Dominant Immune Combinations</h2>
+<p style="font-size:12px;color:var(--text2);margin-bottom:10px;">
+  Each root has an immune fingerprint: the set of primes q where <span class="formula">(p+1) &equiv; 0 mod q</span>.
+  These are the most common fingerprints.
+</p>
+<div class="grid-2">
+  <div class="panel" id="comboPanel" style="max-height:500px;overflow-y:auto;"></div>
+  <div class="panel">
+    <canvas id="comboChart"></canvas>
+  </div>
+</div>
+
+<!-- Section 3: Group theory -->
+<h2>3. Why These Rates? &mdash; Multiplicative Order of 2</h2>
+<div class="panel">
+  <table id="groupTable">
+    <thead>
+      <tr>
+        <th>q</th><th>ord(2,q)</th><th>|&langle;2&rangle;|</th>
+        <th>Safe residues</th><th>Immune%</th><th>Safe%</th>
+        <th>Expected imm%<br><small>(among safe)</small></th>
+        <th>Mechanism</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Section 4: Survival breakdown -->
+<h2>4. Survival Mechanism Breakdown</h2>
+<div class="grid-2">
+  <div class="panel">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">
+      Three ways a root survives prime q:
+    </div>
+    <div style="margin:8px 0">
+      <p><span class="tag tag-immune">IMMUNE</span>
+        <span class="formula" style="margin-left:4px">(p+1) &equiv; 0 mod q</span>
+        <span style="font-size:11px;color:var(--text3)"> &mdash; q never divides any member</span></p>
+      <p style="margin-top:6px"><span class="tag tag-coset">COSET</span>
+        <span class="formula" style="margin-left:4px">(p+1) mod q &notin; &langle;2&rangle;</span>
+        <span style="font-size:11px;color:var(--text3)"> &mdash; 2<sup>j</sup>&middot;(p+1) never &equiv; 1</span></p>
+      <p style="margin-top:6px"><span class="tag tag-beyond">BEYOND</span>
+        <span style="font-size:11px;color:var(--text3)"> &mdash; kill position j &ge; chain length</span></p>
+    </div>
+  </div>
+  <div class="panel">
+    <canvas id="barChart"></canvas>
+  </div>
+</div>
+
+<!-- Section 5: Residue distribution -->
+<h2>5. Residue Distribution &mdash; (p+1) mod q</h2>
+<p style="font-size:12px;color:var(--text2);margin-bottom:10px;">
+  Distribution of <span class="formula">(p+1) mod q</span> across all roots.
+  Residue 0 = immune. Residues in <span class="formula">&langle;2&rangle; mod q</span> = would-be killers
+  (but filtered out by chain existence).
+</p>
+<div class="panel">
+  <canvas id="residueChart"></canvas>
+</div>
+
+<!-- Section 6: Kill positions -->
+<h2>6. Kill Position Map</h2>
+<div class="panel">
+  <canvas id="killChart"></canvas>
+  <p class="note">Bright = kill possible at this position. Dashed line = CC10 boundary.
+    Positions left of boundary are forbidden for valid chains.</p>
+</div>
+
+<!-- Section 7: Raw summary -->
+<h2>7. Summary Table</h2>
+<div class="panel">
+  <table id="summaryTable">
+    <thead>
+      <tr><th>q</th><th>ord(2,q)</th><th>Immune</th><th>Immune%</th><th>Safe</th><th>Safe%</th><th>Random 1/q</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<p style="font-size:10px;color:var(--text3);margin-top:24px;text-align:center;">
+  CC18 Campaign &mdash; Cunningham Chain Constructor &mdash; Immunization Analysis
+</p>
+</div>
+
+<script>
+let D; // loaded data
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      D = JSON.parse(ev.target.result);
+      document.getElementById('dashboard').style.display = 'block';
+      render();
+    } catch(err) { alert('Invalid JSON: ' + err.message); }
+  };
+  reader.readAsText(file);
+});
+
+// Try loading bundled JSON; fall back to file picker
+fetch('immunization_all.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => {
+    D = data;
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('loadSection').style.display = 'none';
+    render();
+  })
+  .catch(() => { /* no bundled data — user picks via file input */ });
+
+const PRIME_COLORS = {
+  3:'#f85149', 5:'#d29922', 7:'#58a6ff', 11:'#3fb950', 13:'#bc8cff',
+  17:'#79c0ff', 19:'#f0883e', 23:'#a5d6ff', 29:'#ff7b72', 31:'#d2a8ff'
+};
+
+function pctColor(pct) {
+  if (pct >= 99.5) return '#3fb950';
+  if (pct >= 80) return `rgb(${30+Math.round((pct-80)/19.5*33)},${120+Math.round((pct-80)/19.5*65)},${60+Math.round((pct-80)/19.5*20)})`;
+  if (pct >= 40) return `rgb(${20+Math.round((pct-40)/40*10)},${60+Math.round((pct-40)/40*60)},${80-Math.round((pct-40)/40*20)})`;
+  if (pct >= 10) return `rgb(${15+Math.round((pct-10)/30*5)},${30+Math.round((pct-10)/30*30)},${60+Math.round((pct-10)/30*20)})`;
+  return `rgb(${13+Math.round(pct/10*2)},${17+Math.round(pct/10*13)},${34+Math.round(pct/10*26)})`;
+}
+
+function render() {
+  const P = D.meta.primes;
+  const NP = P.length;
+  const total = D.meta.total_roots;
+
+  // Stats row
+  const ccLens = D.per_cc.map(r => r.cc);
+  const minCC = Math.min(...ccLens), maxCC = Math.max(...ccLens);
+  const topCombo = D.combinations.length > 0 ? D.combinations[0].top[0] : null;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="label">Total Roots</div>
+      <div class="value">${total.toLocaleString()}</div>
+      <div class="detail">${D.meta.min_bits > 0 ? 'min ' + D.meta.min_bits + '-bit' : 'all bit sizes'}</div></div>
+    <div class="stat-card"><div class="label">CC Range</div>
+      <div class="value" style="color:var(--accent)">CC${minCC}&ndash;CC${maxCC}</div>
+      <div class="detail">${ccLens.length} chain lengths</div></div>
+    <div class="stat-card"><div class="label">Primes Tested</div>
+      <div class="value" style="color:var(--green)">${NP}</div>
+      <div class="detail">q = ${P.join(', ')}</div></div>
+    <div class="stat-card"><div class="label">#1 Fingerprint</div>
+      <div class="value" style="font-size:18px;color:var(--orange)">{${topCombo ? topCombo.primes : '?'}}</div>
+      <div class="detail">${topCombo ? topCombo.pct.toFixed(1) + '% of roots' : ''}</div></div>
+  `;
+
+  drawHeatmap();
+  drawCombos();
+  drawComboChart();
+  drawGroupTable();
+  drawBarChart();
+  drawResidueChart();
+  drawKillChart();
+  drawSummaryTable();
+  drawLegendBar();
+}
+
+// ============ HEATMAP ============
+function drawHeatmap() {
+  const P = D.meta.primes, NP = P.length;
+  const rows = D.per_cc;
+  const canvas = document.getElementById('heatmapImm');
+  const cellW = 75, cellH = 32;
+  const margin = {top: 36, right: 80, bottom: 10, left: 56};
+  canvas.width = margin.left + NP * cellW + margin.right;
+  canvas.height = margin.top + rows.length * cellH + margin.bottom;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Headers
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px -apple-system,sans-serif'; ctx.textAlign = 'center';
+  for (let pi = 0; pi < NP; pi++)
+    ctx.fillText('q=' + P[pi], margin.left + pi*cellW + cellW/2, margin.top - 10);
+
+  ctx.textAlign = 'right'; ctx.fillStyle = '#8b949e';
+  ctx.font = '11px -apple-system,sans-serif';
+  for (let ci = 0; ci < rows.length; ci++)
+    ctx.fillText('CC' + rows[ci].cc, margin.left - 8, margin.top + ci*cellH + cellH/2 + 4);
+
+  // Cells
+  for (let ci = 0; ci < rows.length; ci++) {
+    for (let pi = 0; pi < NP; pi++) {
+      const pct = rows[ci].immune_pct[pi];
+      const x = margin.left + pi*cellW, y = margin.top + ci*cellH;
+      ctx.fillStyle = pctColor(pct);
+      ctx.fillRect(x+1, y+1, cellW-2, cellH-2);
+      ctx.fillStyle = pct > 50 ? '#e6edf3' : pct > 15 ? '#c9d1d9' : '#6e7681';
+      ctx.font = pct >= 99.5 ? 'bold 11px monospace' : '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(pct >= 99.5 ? '100' : pct.toFixed(1), x+cellW/2, y+cellH/2+4);
+    }
+    // Count
+    const n = rows[ci].count;
+    const label = n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(n>=1e4?0:1)+'k' : ''+n;
+    ctx.fillStyle = '#6e7681'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('n='+label, margin.left + NP*cellW + 6, margin.top + ci*cellH + cellH/2 + 4);
+  }
+}
+
+// ============ COMBINATIONS TABLE ============
+function drawCombos() {
+  const panel = document.getElementById('comboPanel');
+  // Merge all CCs into global
+  const globalMap = {};
+  for (const cc of D.combinations) {
+    for (const t of cc.top) {
+      const key = t.primes;
+      if (!globalMap[key]) globalMap[key] = {primes: t.primes, mask: t.mask, count: 0, num_immune: t.num_immune};
+      globalMap[key].count += t.count;
+    }
+  }
+  const sorted = Object.values(globalMap).sort((a,b) => b.count - a.count);
+  const total = D.meta.total_roots;
+
+  let html = '<table><thead><tr><th>#</th><th>Immune to primes</th><th>Count</th><th>%</th><th style="width:200px">Distribution</th></tr></thead><tbody>';
+  const topN = Math.min(sorted.length, 20);
+  const maxCount = sorted[0]?.count || 1;
+  for (let i = 0; i < topN; i++) {
+    const c = sorted[i];
+    const pct = 100 * c.count / total;
+    const barW = Math.max(2, 190 * c.count / maxCount);
+    const primesList = c.primes.split(',').map(p => `<span style="color:${PRIME_COLORS[+p]||'#8b949e'}">${p}</span>`).join(', ');
+    html += `<tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td>{${primesList}} <span class="dim">(${c.num_immune})</span></td>
+      <td class="pct-cell">${c.count.toLocaleString()}</td>
+      <td class="pct-cell ${pct > 10 ? 'highlight' : ''}">${pct.toFixed(2)}%</td>
+      <td><div style="width:${barW}px;height:14px;background:var(--accent);border-radius:2px;opacity:${0.4+0.6*c.count/maxCount}"></div></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  panel.innerHTML = html;
+}
+
+// ============ COMBO PIE/DONUT ============
+function drawComboChart() {
+  const canvas = document.getElementById('comboChart');
+  canvas.width = 500; canvas.height = 360;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, 500, 360);
+
+  // Merge all CCs
+  const globalMap = {};
+  for (const cc of D.combinations)
+    for (const t of cc.top) {
+      if (!globalMap[t.primes]) globalMap[t.primes] = {primes: t.primes, count: 0, num: t.num_immune};
+      globalMap[t.primes].count += t.count;
+    }
+  const sorted = Object.values(globalMap).sort((a,b) => b.count - a.count);
+  const total = D.meta.total_roots;
+
+  const colors = ['#58a6ff','#3fb950','#d29922','#f85149','#bc8cff','#79c0ff','#f0883e','#a5d6ff','#ff7b72','#d2a8ff','#39d353','#da3633'];
+  const cx = 180, cy = 180, r1 = 70, r2 = 140;
+  let angle = -Math.PI/2;
+
+  // Draw up to 10 slices + "other"
+  const topN = Math.min(sorted.length, 10);
+  let otherCount = total;
+  const slices = [];
+  for (let i = 0; i < topN; i++) {
+    slices.push({...sorted[i], color: colors[i % colors.length]});
+    otherCount -= sorted[i].count;
+  }
+  if (otherCount > 0)
+    slices.push({primes: 'other', count: otherCount, num: 0, color: '#30363d'});
+
+  for (const s of slices) {
+    const sweep = 2 * Math.PI * s.count / total;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r2, angle, angle + sweep);
+    ctx.arc(cx, cy, r1, angle + sweep, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    ctx.strokeStyle = '#161b22'; ctx.lineWidth = 2; ctx.stroke();
+    angle += sweep;
+  }
+
+  // Center text
+  ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 20px -apple-system,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(total.toLocaleString(), cx, cy - 4);
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px -apple-system,sans-serif';
+  ctx.fillText('roots', cx, cy + 14);
+
+  // Legend (right side)
+  let ly = 20;
+  ctx.textAlign = 'left';
+  for (let i = 0; i < slices.length; i++) {
+    const s = slices[i];
+    const pct = (100 * s.count / total).toFixed(1);
+    ctx.fillStyle = s.color;
+    ctx.fillRect(340, ly, 12, 12);
+    ctx.fillStyle = '#e6edf3'; ctx.font = '11px monospace';
+    ctx.fillText(pct + '%', 358, ly + 10);
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system,sans-serif';
+    const label = s.primes === 'other' ? 'other' : '{' + s.primes + '}';
+    ctx.fillText(label, 400, ly + 10);
+    ly += 18;
+  }
+
+  ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 13px -apple-system,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Immune Fingerprint Distribution', 250, 350);
+}
+
+// ============ GROUP THEORY TABLE ============
+function drawGroupTable() {
+  const tbody = document.querySelector('#groupTable tbody');
+  tbody.innerHTML = '';
+  const total = D.meta.total_roots;
+  const ccMin = Math.min(...D.per_cc.map(r => r.cc));
+
+  for (let pi = 0; pi < D.group_theory.length; pi++) {
+    const g = D.group_theory[pi];
+    const immPct = D.per_cc.reduce((s, r) => s + r.immune_pct[pi] * r.count, 0)
+                 / D.per_cc.reduce((s, r) => s + r.count, 0);
+    const safePct = D.per_cc.reduce((s, r) => s + r.safe_pct[pi] * r.count, 0)
+                  / D.per_cc.reduce((s, r) => s + r.count, 0);
+    const expectedImm = (g.expected_immune_among_safe * 100).toFixed(1);
+
+    let mechanism;
+    if (g.ord2q <= ccMin && g.subgroup_size === g.q - 1)
+      mechanism = '<span class="tag tag-immune">Must be immune</span>';
+    else if (g.ord2q < ccMin)
+      mechanism = '<span class="tag tag-coset">Coset safe (ord &lt; CC' + ccMin + ')</span>';
+    else
+      mechanism = '<span class="tag tag-beyond">Kill often beyond chain</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600">${g.q}</td>
+      <td><code>${g.ord2q}</code></td>
+      <td><code>${g.subgroup_size}</code>/${g.q-1}</td>
+      <td style="font-size:10px;color:var(--text3)">{${g.safe_set.join(',')}}</td>
+      <td class="pct-cell" style="font-weight:600;color:${immPct>90?'var(--green)':'var(--accent)'}">${immPct.toFixed(2)}%</td>
+      <td class="pct-cell highlight">${safePct.toFixed(2)}%</td>
+      <td class="pct-cell"><code>1/${g.safe_count}</code> = ${expectedImm}%</td>
+      <td>${mechanism}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ============ BAR CHART ============
+function drawBarChart() {
+  const canvas = document.getElementById('barChart');
+  canvas.width = 500; canvas.height = 280;
+  const ctx = canvas.getContext('2d');
+  const P = D.meta.primes, NP = P.length, total = D.meta.total_roots;
+  const m = {top:28, right:16, bottom:28, left:44};
+  const pW = (canvas.width-m.left-m.right)/NP, pH = canvas.height-m.top-m.bottom;
+  ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+  for (let p = 0; p <= 100; p += 25) {
+    const y = m.top + pH*(1-p/100);
+    ctx.beginPath(); ctx.moveTo(m.left, y); ctx.lineTo(canvas.width-m.right, y); ctx.stroke();
+    ctx.fillStyle = '#6e7681'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(p+'%', m.left-4, y+3);
+  }
+
+  for (let pi = 0; pi < NP; pi++) {
+    // Compute totals
+    let immN = 0, safeN = 0;
+    for (const r of D.per_cc) {
+      immN += r.immune_pct[pi] * r.count / 100;
+      safeN += r.safe_pct[pi] * r.count / 100;
+    }
+    const immPct = immN/total, cosetPct = (safeN-immN)/total;
+    const x = m.left + pi*pW + pW*0.15, bw = pW*0.7;
+    let y = m.top;
+
+    // Immune
+    const immH = immPct * pH;
+    ctx.fillStyle = '#3fb950'; ctx.fillRect(x, y, bw, immH); y += immH;
+    // Coset
+    if (cosetPct > 0.005) {
+      ctx.fillStyle = '#bc8cff'; ctx.fillRect(x, y, bw, cosetPct*pH);
+    }
+
+    // Labels
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('q='+P[pi], x+bw/2, m.top+pH+14);
+    if (immPct > 0.15) {
+      ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 9px monospace';
+      ctx.fillText((immPct*100).toFixed(1)+'%', x+bw/2, m.top+immH/2+3);
+    }
+  }
+  ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 12px -apple-system,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Survival: Immune (green) vs Coset (purple)', canvas.width/2, 16);
+}
+
+// ============ RESIDUE CHART ============
+function drawResidueChart() {
+  const canvas = document.getElementById('residueChart');
+  const P = D.meta.primes, NP = P.length;
+  const maxQ = Math.max(...P);
+  const cellW = 22, cellH = 24;
+  const m = {top: 30, right: 10, bottom: 10, left: 50};
+  canvas.width = m.left + maxQ * cellW + m.right;
+  canvas.height = m.top + NP * cellH + m.bottom;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const total = D.meta.total_roots;
+
+  for (let pi = 0; pi < NP; pi++) {
+    const rd = D.residue_distribution[pi];
+    const q = rd.q;
+    const g = D.group_theory[pi];
+    const sgSet = new Set(g.subgroup);
+
+    ctx.fillStyle = '#8b949e'; ctx.font = '11px -apple-system,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('q=' + q, m.left - 6, m.top + pi*cellH + cellH/2 + 4);
+
+    const maxC = Math.max(...rd.counts);
+    for (let r = 0; r < q; r++) {
+      const x = m.left + r * cellW, y = m.top + pi * cellH;
+      const c = rd.counts[r];
+      const pct = c / total;
+      const intensity = maxC > 0 ? c / maxC : 0;
+
+      // Color: residue 0 = green (immune), in <2> = red (killer), other = blue (coset safe)
+      let color;
+      if (r === 0) color = `rgba(63,185,80,${0.2 + 0.8*intensity})`;
+      else if (sgSet.has(r)) color = `rgba(248,81,73,${0.15 + 0.6*intensity})`;
+      else color = `rgba(188,140,255,${0.15 + 0.6*intensity})`;
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x+1, y+1, cellW-2, cellH-2);
+
+      if (cellW >= 20 && c > 0) {
+        ctx.fillStyle = intensity > 0.5 ? '#e6edf3' : '#8b949e';
+        ctx.font = '8px monospace'; ctx.textAlign = 'center';
+        const label = c >= 10000 ? (c/1000|0)+'k' : c >= 1000 ? (c/1000).toFixed(1)+'k' : ''+c;
+        ctx.fillText(label, x+cellW/2, y+cellH/2+3);
+      }
+    }
+  }
+  // Header
+  ctx.fillStyle = '#6e7681'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  for (let r = 0; r < maxQ; r++)
+    ctx.fillText(r, m.left + r*cellW + cellW/2, m.top - 6);
+
+  ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('(p+1) mod q residue index', m.left, m.top - 18);
+}
+
+// ============ KILL CHART ============
+function drawKillChart() {
+  const canvas = document.getElementById('killChart');
+  const P = D.meta.primes, NP = P.length;
+  const maxPos = 25;
+  const cellW = 28, cellH = 22;
+  const m = {top: 24, right: 10, bottom: 30, left: 50};
+  canvas.width = m.left + maxPos * cellW + m.right;
+  canvas.height = m.top + NP * cellH + m.bottom;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const ccMin = Math.min(...D.per_cc.map(r => r.cc));
+
+  for (let pi = 0; pi < NP; pi++) {
+    const g = D.group_theory[pi];
+    const o = g.ord2q;
+    const y = m.top + pi * cellH;
+
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('q='+g.q, m.left - 6, y + cellH/2 + 3);
+
+    for (let j = 0; j < maxPos; j++) {
+      const x = m.left + j * cellW;
+      // Every position j has a killer residue (cycling with period ord)
+      const inCycle = true;
+      const opacity = j < o ? 0.7 : 0.25;
+      ctx.fillStyle = PRIME_COLORS[g.q] || '#58a6ff';
+      ctx.globalAlpha = opacity;
+      ctx.fillRect(x+1, y+1, cellW-2, cellH-2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // CC boundary line
+  const bx = m.left + ccMin * cellW;
+  ctx.strokeStyle = '#f8514988'; ctx.lineWidth = 2;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(bx, m.top); ctx.lineTo(bx, m.top + NP*cellH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#f85149'; ctx.font = 'bold 9px -apple-system,sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('CC'+ccMin, bx+3, m.top+10);
+
+  // Position labels
+  ctx.fillStyle = '#6e7681'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  for (let j = 0; j < maxPos; j++)
+    ctx.fillText(j, m.left + j*cellW + cellW/2, m.top + NP*cellH + 14);
+  ctx.fillText('chain position j', m.left + maxPos*cellW/2, m.top + NP*cellH + 26);
+}
+
+// ============ SUMMARY TABLE ============
+function drawSummaryTable() {
+  const tbody = document.querySelector('#summaryTable tbody');
+  tbody.innerHTML = '';
+  const total = D.meta.total_roots;
+
+  for (let pi = 0; pi < D.group_theory.length; pi++) {
+    const g = D.group_theory[pi];
+    let immN = 0, safeN = 0;
+    for (const b of D.per_bucket) { immN += b.immune[pi]; safeN += b.safe[pi]; }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600">${g.q}</td>
+      <td><code>${g.ord2q}</code></td>
+      <td>${immN.toLocaleString()}</td>
+      <td class="pct-cell" style="font-weight:600">${(100*immN/total).toFixed(2)}%</td>
+      <td>${safeN.toLocaleString()}</td>
+      <td class="pct-cell highlight">${(100*safeN/total).toFixed(2)}%</td>
+      <td class="dim">1/${g.q} = ${(100/g.q).toFixed(2)}%</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function drawLegendBar() {
+  const c = document.getElementById('legendBar');
+  const ctx = c.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,200,0);
+  grad.addColorStop(0,'#0d1117'); grad.addColorStop(0.1,'#111d2e');
+  grad.addColorStop(0.3,'#143c50'); grad.addColorStop(0.6,'#1e7848'); grad.addColorStop(1,'#3fb950');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.roundRect(0,0,200,12,3); ctx.fill();
+}
+</script>
+
+</body>
+</html>

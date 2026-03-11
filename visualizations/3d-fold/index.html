@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Adic Tree 3D Folding v9 — p+1 Analysis + Cunningham Chains</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg-panel: #12121a;
+            --bg-card: #1a1a28;
+            --border: #2a2a3a;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888aa;
+            --accent-gold: #ffd700;
+            --accent-cyan: #00d4ff;
+            --accent-magenta: #ff00aa;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app { display: flex; height: 100vh; }
+        
+        .controls-panel {
+            width: 340px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        
+        .logo {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--accent-gold);
+        }
+        
+        .logo span { color: var(--text-secondary); font-weight: 400; }
+        .version { color: var(--accent-cyan); font-size: 11px; margin-left: 8px; }
+        
+        .description {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .highlight-box {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 10px;
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .highlight-box strong { color: var(--accent-cyan); }
+        .highlight-box .gold { color: var(--accent-gold); }
+        
+        .section {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 14px;
+        }
+        
+        .section-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .control-row:last-child { margin-bottom: 0; }
+        
+        select, input[type="range"] {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        
+        select { min-width: 140px; cursor: pointer; }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+            border-radius: 3px;
+            padding: 0;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        
+        .btn-group { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        
+        button {
+            flex: 1;
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-width: 60px;
+        }
+        
+        button:hover { background: var(--bg-card); border-color: var(--accent-cyan); }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .stat-box {
+            background: var(--bg-deep);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            color: var(--accent-gold);
+        }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        
+        .number-info {
+            background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(0,212,255,0.05));
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        
+        .number-big {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            color: var(--accent-gold);
+        }
+        
+        .number-binary {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--accent-cyan);
+            margin: 4px 0;
+            word-break: break-all;
+        }
+        
+        .number-props {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 8px;
+        }
+        
+        .prop {
+            background: var(--bg-deep);
+            padding: 5px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .prop-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+        .prop-label { font-size: 7px; color: var(--text-secondary); text-transform: uppercase; }
+        
+        .ray-info {
+            margin-top: 8px;
+            padding: 6px;
+            background: var(--bg-deep);
+            border-radius: 5px;
+            font-size: 9px;
+        }
+        
+        .ray-sequence {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+            margin-top: 3px;
+            font-size: 10px;
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 9px;
+        }
+        
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #canvas { display: block; }
+        
+        .tooltip {
+            position: absolute;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 100;
+            font-size: 11px;
+            min-width: 160px;
+        }
+        
+        .tooltip.visible { opacity: 1; }
+        .tooltip-number { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--accent-gold); }
+        .tooltip-row { display: flex; justify-content: space-between; margin-top: 3px; color: var(--text-secondary); }
+        .tooltip-row span:last-child { color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+        
+        .instructions {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(18,18,26,0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+        
+        .instructions kbd {
+            background: var(--bg-card);
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: var(--text-primary);
+        }
+        
+        .level-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(18,18,26,0.95);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .level-indicator .title { color: var(--accent-gold); margin-bottom: 6px; font-weight: 600; }
+        .level-line { margin: 2px 0; color: var(--text-secondary); padding: 2px 4px; }
+        .level-line.active { color: var(--accent-cyan); background: rgba(0,212,255,0.15); border-radius: 3px; }
+        .level-line .count { color: var(--accent-gold); }
+        .level-line .pos { color: var(--accent-magenta); font-size: 8px; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="controls-panel">
+            <div>
+                <div class="logo">2-Adic <span>3D Tree</span> <span class="version">v9</span></div>
+                <div class="description">
+                    Pure power-of-2 structure.<br>
+                    Bottom = D×D grid, D levels above.
+                </div>
+                <div class="highlight-box">
+                    <strong>Power of 2 Logic:</strong><br>
+                    <span class="gold">4×4</span>: bottom 16-31, 4 levels<br>
+                    <span class="gold">8×8</span>: bottom 64-127, 6 levels<br>
+                    <span class="gold">16×16</span>: bottom 256-511, 8 levels<br>
+                    <span class="gold">32×32</span>: bottom 1024-2047, 10 levels<br>
+                    <span class="gold">64×64</span>: bottom 4096-8191, 12 levels ⚡<br>
+                    Top view = p+1 analysis grid
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Base Grid Size</div>
+                <div class="control-row">
+                    <span>D × D Bottom</span>
+                    <select id="baseSize">
+                        <option value="2">2×2 (4-7)</option>
+                        <option value="4" selected>4×4 (16-31)</option>
+                        <option value="8">8×8 (64-127)</option>
+                        <option value="16">16×16 (256-511)</option>
+                        <option value="32">32×32 (1024-2047)</option>
+                        <option value="64">64×64 (4096-8191) ⚡</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Color Mode</div>
+                <div class="control-row">
+                    <span>Color By</span>
+                    <select id="colorMode">
+                        <option value="oddCore">Odd Core</option>
+                        <option value="depth">3D Depth</option>
+                        <option value="cunningham">Cunningham Chains</option>
+                        <option value="factor">p+1 Factor (primes)</option>
+                        <option value="prime">Primes / Composite</option>
+                        <option value="level">Tree Level</option>
+                        <option value="v2">v₂ Value</option>
+                        <option value="mod8">Mod 8 Class</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <span>Cell Size</span>
+                    <input type="range" id="cellSize" min="20" max="80" value="45">
+                </div>
+                <div class="control-row">
+                    <span>Y Stretch</span>
+                    <input type="range" id="yStretch" min="50" max="150" value="100">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">View</div>
+                <div class="btn-group">
+                    <button id="rotL">↺ Left</button>
+                    <button id="rotR">↻ Right</button>
+                    <button id="tiltU">↑ Tilt</button>
+                    <button id="tiltD">↓ Tilt</button>
+                </div>
+                <div class="btn-group">
+                    <button id="resetView">Reset</button>
+                    <button id="bottomView">Bottom</button>
+                    <button id="sideView">Side</button>
+                    <button id="topView">Top</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Filter</div>
+                <div class="control-row">
+                    <span>Show Level</span>
+                    <select id="levelFilter">
+                        <option value="-1">All Levels</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <span>Highlight Core</span>
+                    <select id="coreHighlight">
+                        <option value="0">None</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Cunningham Chain Edges</div>
+                <div class="control-row">
+                    <span style="color:#ef4444">CC1 edges (2p+1)</span>
+                    <input type="checkbox" id="showCC1Lines" style="width:16px;height:16px;accent-color:#ef4444">
+                </div>
+                <div class="control-row">
+                    <span style="color:#3b82f6">CC2 edges (2p−1)</span>
+                    <input type="checkbox" id="showCC2Lines" style="width:16px;height:16px;accent-color:#3b82f6">
+                </div>
+                <div class="stats-grid" style="margin-top:8px">
+                    <div class="stat-box"><div class="stat-value" id="statCC1">—</div><div class="stat-label">CC1 chains</div></div>
+                    <div class="stat-box"><div class="stat-value" id="statCC2">—</div><div class="stat-label">CC2 chains</div></div>
+                </div>
+            </div>
+            
+            <div class="section" id="selectedSection" style="display:none">
+                <div class="section-title">Selected</div>
+                <div class="number-info">
+                    <div class="number-big" id="selNum">—</div>
+                    <div class="number-binary" id="selBin">—</div>
+                    <div class="number-props">
+                        <div class="prop"><div class="prop-val" id="selLevel">—</div><div class="prop-label">Level</div></div>
+                        <div class="prop"><div class="prop-val" id="selCore">—</div><div class="prop-label">Core</div></div>
+                        <div class="prop"><div class="prop-val" id="selV2">—</div><div class="prop-label">v₂</div></div>
+                        <div class="prop"><div class="prop-val" id="selPos">—</div><div class="prop-label">X,Z</div></div>
+                    </div>
+                    <div class="ray-info">
+                        <strong>Vertical ray (÷2 up, ×2 down):</strong>
+                        <div class="ray-sequence" id="selRay">—</div>
+                    </div>
+                    <div class="ray-info" style="margin-top:6px">
+                        <strong style="color:var(--accent-cyan)">p+1 factorization:</strong>
+                        <div class="ray-sequence" id="selP1" style="color:var(--accent-cyan)">—</div>
+                    </div>
+                    <div class="ray-info" style="margin-top:4px">
+                        <strong style="color:#ef4444">CC1 (2p+1):</strong>
+                        <div class="ray-sequence" id="selCC1" style="color:#ef4444">—</div>
+                    </div>
+                    <div class="ray-info" style="margin-top:4px">
+                        <strong style="color:#3b82f6">CC2 (2p−1):</strong>
+                        <div class="ray-sequence" id="selCC2" style="color:#3b82f6">—</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Statistics</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Numbers</div></div>
+                    <div class="stat-box"><div class="stat-value" id="statLevels">—</div><div class="stat-label">Levels</div></div>
+                    <div class="stat-box"><div class="stat-value" id="statPrimes">—</div><div class="stat-label">Primes</div></div>
+                    <div class="stat-box"><div class="stat-value" id="statPow2">—</div><div class="stat-label">2^k</div></div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Legend</div>
+                <div class="legend-grid" id="legend"></div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <canvas id="canvas"></canvas>
+            <div class="tooltip" id="tooltip">
+                <div class="tooltip-number" id="ttNum"></div>
+                <div class="tooltip-row"><span>Level (Y):</span><span id="ttLevel"></span></div>
+                <div class="tooltip-row"><span>Pos (X,Z):</span><span id="ttPos"></span></div>
+                <div class="tooltip-row"><span>Odd Core:</span><span id="ttCore"></span></div>
+                <div class="tooltip-row"><span>v₂:</span><span id="ttV2"></span></div>
+                <div class="tooltip-row"><span>p+1 / factors:</span><span id="ttCC1" style="color:#00d4ff"></span></div>
+                <div class="tooltip-row"><span>CC chains:</span><span id="ttCC2" style="color:#ffd700"></span></div>
+            </div>
+            <div class="level-indicator" id="levelIndicator"></div>
+            <div class="instructions">
+                <kbd>Drag</kbd> rotate • <kbd>Scroll</kbd> zoom • <kbd>Click</kbd> select
+                <span style="margin-left:16px;color:#555">© 2026 <a href="https://be.linkedin.com/in/nenadmicic" target="_blank" style="color:var(--accent-cyan);text-decoration:none">Nenad Mićić</a> & Claude | <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" style="color:var(--accent-cyan);text-decoration:none">Apache-2.0</a></span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Math
+        function v2(n) { if (!n) return 0; let c = 0; while (!(n & 1)) { n >>= 1; c++; } return c; }
+        function oddCore(n) { while (n && !(n & 1)) n >>= 1; return n; }
+        function bitLength(n) { return n ? Math.floor(Math.log2(n)) + 1 : 0; }
+        function isPrime(n) { if (n < 2) return false; if (n < 4) return n > 1; if (!(n % 2)) return false; for (let i = 3; i * i <= n; i += 2) if (!(n % i)) return false; return true; }
+        function isPow2(n) { return n > 0 && !(n & (n - 1)); }
+        
+        // p+1 factor analysis — 9 small primes palette (from p1_analysis.html)
+        const NINE_PRIMES = [3,5,7,11,13,17,19,23,29];
+        const NINE_COLORS = ['#ff8c00','#ffd700','#00ee77','#00ccff','#8866ff','#dd44ff','#ff44aa','#ff3355','#55ffcc'];
+        const NINE_LABELS = ['3','5','7','11','13','17','19','23','29'];
+        
+        function smallestNineFactor(n) {
+            for (let i = 0; i < NINE_PRIMES.length; i++) if (n % NINE_PRIMES[i] === 0) return i;
+            return -1;
+        }
+        function factorize(n) { if (n<=1) return []; const f=[]; let x=n; for (let d=2;d*d<=x;d++) { while(x%d===0){f.push(d);x=Math.floor(x/d);} } if(x>1)f.push(x); return f; }
+        function factorStr(n) {
+            if (n<=1) return String(n);
+            const facs=factorize(n), c={};
+            facs.forEach(f=>c[f]=(c[f]||0)+1);
+            const sup=e=>e===1?'':['²','³','⁴','⁵','⁶','⁷','⁸'][e-2]||'^'+e;
+            return Object.entries(c).map(([p,e])=>p+sup(e)).join('×');
+        }
+        
+        // Cunningham Chain detection
+        function findCCChains(maxN, kind) {
+            const chains = [], used = new Set();
+            for (let p = 2; p <= maxN; p++) {
+                if (!isPrime(p) || used.has(p)) continue;
+                const pred = kind === 1 ? (p-1)/2 : (p+1)/2;
+                if (pred >= 2 && Number.isInteger(pred) && isPrime(pred)) continue;
+                const ch = [p]; let cur = p;
+                while (true) {
+                    const nx = kind === 1 ? 2*cur+1 : 2*cur-1;
+                    if (nx < 2 || !isPrime(nx)) break;
+                    ch.push(nx); used.add(nx); cur = nx;
+                    if (nx > maxN * 4) break;
+                }
+                if (ch.length >= 2) chains.push(ch);
+            }
+            return chains.sort((a,b) => b.length - a.length);
+        }
+        
+        let cc1Chains = [], cc2Chains = [];
+        let ccMember = new Map(); // n -> {cc1: chain|null, cc2: chain|null}
+        
+        function buildCCCache() {
+            cc1Chains = findCCChains(bottomEnd, 1);
+            cc2Chains = findCCChains(bottomEnd, 2);
+            ccMember = new Map();
+            cc1Chains.forEach(ch => ch.forEach(p => {
+                if (!ccMember.has(p)) ccMember.set(p, {cc1:null, cc2:null});
+                ccMember.get(p).cc1 = ch;
+            }));
+            cc2Chains.forEach(ch => ch.forEach(p => {
+                if (!ccMember.has(p)) ccMember.set(p, {cc1:null, cc2:null});
+                ccMember.get(p).cc2 = ch;
+            }));
+        }
+        
+        // State
+        let D = 4;  // Base grid dimension (power of 2)
+        let colorMode = 'oddCore';
+        let cellSize = 45;
+        let yStretch = 100;  // 100 = cube-like, >100 = taller, <100 = flatter
+        let levelFilter = -1, coreHighlight = 0;
+        let selectedNumber = null;
+        let showCC1Lines = false, showCC2Lines = false;
+        
+        let angleX = 22 * Math.PI / 180, angleY = -32 * Math.PI / 180;
+        let zoom = 1;
+        let isDragging = false, lastMX = 0, lastMY = 0;
+        let hoveredCell = null;
+        
+        let gridData = [], cellPositions = [];
+        let numLevels = 0;
+        let bottomStart = 0, bottomEnd = 0;
+        
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        /**
+         * v6: PURE POWER OF 2 STRUCTURE
+         * 
+         * For D×D base grid (D = 2, 4, 8, 16...):
+         * 
+         * Bottom level numbers: 2^D to 2^(D+1) - 1
+         *   D=2: 4-7 (4 numbers = 2×2)
+         *   D=4: 16-31 (16 numbers = 4×4)
+         *   D=8: 64-127 (64 numbers = 8×8)
+         *   D=16: 256-511 (256 numbers = 16×16)
+         * 
+         * Number of levels above bottom:
+         *   log2(bottomStart) - 1 = D - 1 levels above
+         *   Plus bottom = D levels total
+         *   Wait... let's recalculate:
+         *   
+         *   For D=4, bottom is 16-31 (bitLength 5)
+         *   Levels: 5 (16-31), 4 (8-15), 3 (4-7), 2 (2-3)
+         *   That's 4 levels! Which equals D.
+         *   
+         *   For D=8, bottom is 64-127 (bitLength 7)
+         *   Levels: 7, 6, 5, 4, 3, 2 = 6 levels
+         *   
+         *   Pattern: numLevels = log2(bottomStart) = D
+         *   
+         *   Actually for D=8: log2(64) = 6, and we have 6 levels (bitLength 2 to 7)
+         *   For D=4: log2(16) = 4, and we have 4 levels (bitLength 2 to 5)
+         *   
+         *   So numLevels = D (but the height varies based on D)
+         * 
+         * Building from bottom up:
+         * - Lay out 2^D to 2^(D+1)-1 on D×D grid in row-major order
+         * - Each number above inherits X,Z from its ×2 descendant
+         */
+        async function generateGrid() {
+            gridData = [];
+            
+            if (D >= 32) {
+                document.getElementById('canvas').style.opacity = '0.3';
+                await new Promise(r => setTimeout(r, 10));
+            }
+            
+            // Calculate bottom level range
+            // For D×D grid, we need D² numbers
+            // D² = 2^(2*log2(D)) but we want 2^k to 2^(k+1)-1 which has 2^k numbers
+            // So 2^k = D², meaning k = 2*log2(D) = log2(D²)
+            // bottomStart = D², bottomEnd = 2*D² - 1
+            
+            bottomStart = D * D;  // 2^(2*log2(D)) = D²
+            bottomEnd = 2 * D * D - 1;  // 2^(2*log2(D)+1) - 1 = 2D² - 1
+            
+            // Number of levels = log2(bottomStart) (from bitLength 2 up to bitLength of bottom)
+            // bitLength(bottomStart) = bitLength(D²) = 2*log2(D) + 1
+            // Levels go from bitLength 2 to bitLength(bottomEnd)
+            const bottomBitLen = bitLength(bottomEnd);
+            const minBitLen = 2;
+            numLevels = bottomBitLen - minBitLen + 1;
+            
+            // Function to get bottom representative
+            function getBottomRep(n) {
+                while (n < bottomStart) n *= 2;
+                return n;
+            }
+            
+            // Function to get X, Z from bottom position
+            function getXZ(n) {
+                const rep = getBottomRep(n);
+                if (rep > bottomEnd) return null;  // Out of range
+                const idx = rep - bottomStart;
+                return { x: idx % D, z: Math.floor(idx / D) };
+            }
+            
+            // Generate all numbers
+            for (let level = minBitLen; level <= bottomBitLen; level++) {
+                const start = 1 << (level - 1);
+                const end = (1 << level) - 1;
+                
+                for (let n = start; n <= end; n++) {
+                    const pos = getXZ(n);
+                    if (!pos) continue;  // Skip if no valid position
+                    
+                    const y = level - minBitLen;  // Y=0 at top, Y=numLevels-1 at bottom
+                    
+                    gridData.push({
+                        n,
+                        x: pos.x,
+                        y: y,
+                        z: pos.z,
+                        core: oddCore(n),
+                        v2Val: v2(n),
+                        level,
+                        isPrimeN: isPrime(n),
+                        p1Idx: isPrime(n) ? smallestNineFactor(n + 1) : -1
+                    });
+                }
+            }
+            
+            updateControls();
+            updateStats();
+            buildCCCache();
+            updateCCStats();
+            document.getElementById('canvas').style.opacity = '1';
+        }
+        
+        function updateControls() {
+            const bottomBitLen = bitLength(bottomEnd);
+            const minBitLen = 2;
+            
+            const lvlSel = document.getElementById('levelFilter');
+            lvlSel.innerHTML = '<option value="-1">All Levels</option>';
+            for (let level = minBitLen; level <= bottomBitLen; level++) {
+                const y = level - minBitLen;
+                const s = 1 << (level - 1), e = (1 << level) - 1;
+                const pos = y === 0 ? ' (TOP)' : (y === numLevels - 1 ? ' (BOTTOM)' : '');
+                lvlSel.innerHTML += `<option value="${y}">Y=${y}${pos} (${s}-${e})</option>`;
+            }
+            
+            const coreSel = document.getElementById('coreHighlight');
+            coreSel.innerHTML = '<option value="0">None</option>';
+            const cores = [...new Set(gridData.map(d => d.core))].sort((a, b) => a - b);
+            for (const core of cores.slice(0, 32)) {
+                coreSel.innerHTML += `<option value="${core}">Core ${core}</option>`;
+            }
+        }
+        
+        function updateStats() {
+            const nums = gridData.map(d => d.n);
+            document.getElementById('statTotal').textContent = nums.length;
+            document.getElementById('statLevels').textContent = numLevels;
+            document.getElementById('statPrimes').textContent = nums.filter(isPrime).length;
+            document.getElementById('statPow2').textContent = nums.filter(isPow2).length;
+        }
+        
+        function updateCCStats() {
+            const inRange = n => n >= 2 && n <= bottomEnd;
+            const c1 = cc1Chains.filter(ch => ch.some(inRange));
+            const c2 = cc2Chains.filter(ch => ch.some(inRange));
+            document.getElementById('statCC1').textContent = c1.length;
+            document.getElementById('statCC2').textContent = c2.length;
+        }
+        
+        function updateLevelIndicator() {
+            const ind = document.getElementById('levelIndicator');
+            const bottomBitLen = bitLength(bottomEnd);
+            const minBitLen = 2;
+            
+            let html = `<div class="title">${D}×${D} Base → ${numLevels} Levels</div>`;
+            for (let level = minBitLen; level <= bottomBitLen; level++) {
+                const y = level - minBitLen;
+                const s = 1 << (level - 1), e = (1 << level) - 1;
+                const count = Math.min(e, bottomEnd) - Math.max(s, 2) + 1;
+                const active = levelFilter < 0 || levelFilter === y;
+                const label = y === numLevels - 1 ? 'BOTTOM' : (y === 0 ? 'TOP' : '');
+                
+                // Count how many are actually in grid at this level
+                const inGrid = gridData.filter(d => d.y === y).length;
+                
+                html += `<div class="level-line ${active ? 'active' : ''}">Y=${y}: ${s}-${e} <span class="count">[${inGrid}/${D*D}]</span> <span class="pos">${label}</span></div>`;
+            }
+            
+            ind.innerHTML = html;
+        }
+        
+        // Colors
+        const coreColors = {
+            1: [210, 70], 3: [30, 70], 5: [120, 70], 7: [280, 70],
+            9: [80, 65], 11: [200, 65], 13: [340, 65], 15: [260, 65],
+            17: [160, 60], 19: [50, 60], 21: [290, 60], 23: [100, 60],
+            25: [220, 55], 27: [10, 55], 29: [140, 55], 31: [310, 55]
+        };
+        
+        const levelColors = [
+            [350, 70], [50, 70], [120, 70], [200, 70], 
+            [270, 70], [30, 70], [160, 70], [310, 70]
+        ];
+        
+        function getColor(cell) {
+            const { n, core, v2Val, level, y, isPrimeN, p1Idx } = cell;
+            const maxY = numLevels - 1;
+            
+            switch (colorMode) {
+                case 'oddCore': {
+                    const [h, s] = coreColors[core] || [(core * 137) % 360, 55];
+                    const l = 35 + Math.min(v2Val * 4, 20);
+                    return { bg: `hsl(${h},${s}%,${l}%)`, text: `hsl(${h},80%,85%)` };
+                }
+                case 'depth': {
+                    const ny = maxY > 0 ? y / maxY : 0;
+                    const l = 12 + ny * 50;
+                    return { bg: `hsl(${isPrimeN?0:220},${isPrimeN?50:25}%,${l}%)`, text: l > 35 ? '#000' : '#888' };
+                }
+                case 'factor': {
+                    if (isPrimeN) {
+                        if (p1Idx >= 0) return { bg: NINE_COLORS[p1Idx], text: '#000' };
+                        return { bg: '#ffffff', text: '#000' }; // Mersenne-like
+                    }
+                    const h = Math.round(360 * (n % 7) / 7);
+                    return { bg: `hsl(${h},70%,35%)`, text: '#888' };
+                }
+                case 'prime': {
+                    if (isPrimeN) return { bg: '#ff4466', text: '#fff' };
+                    const ny = maxY > 0 ? y / maxY : 0;
+                    return { bg: `hsl(220,20%,${10 + ny * 25}%)`, text: '#555' };
+                }
+                case 'cunningham': {
+                    const cc = ccMember.get(n);
+                    if (cc && cc.cc1 && cc.cc2) return { bg: '#1a4a3a', text: '#34d399' };
+                    if (cc && cc.cc1) return { bg: '#4a1a1a', text: '#fca5a5' };
+                    if (cc && cc.cc2) return { bg: '#1a2a4a', text: '#93c5fd' };
+                    if (isPrimeN) return { bg: '#2a2a3a', text: '#e0e0e0' };
+                    return { bg: '#1a1a24', text: '#555' };
+                }
+                case 'level': {
+                    const [h, s] = levelColors[y % levelColors.length];
+                    return { bg: `hsl(${h},${s}%,40%)`, text: `hsl(${h},80%,88%)` };
+                }
+                case 'v2': {
+                    const h = (v2Val * 50) % 360;
+                    return { bg: `hsl(${h},70%,42%)`, text: `hsl(${h},80%,88%)` };
+                }
+                case 'mod8': {
+                    const colors = ['#3a3a5a','#1e3a5f','#2a4f2a','#5f3a1e','#1e4a5f','#1e5f3a','#5f2a3a','#5f1e5f'];
+                    const texts = ['#888','#60a5fa','#66cc66','#f97316','#38bdf8','#22c55e','#fb7185','#d946ef'];
+                    return { bg: colors[n % 8], text: texts[n % 8] };
+                }
+            }
+            return { bg: '#333', text: '#888' };
+        }
+        
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            render();
+        }
+        
+        function project(x, y, z) {
+            const cx = (D - 1) / 2;
+            const cy = (numLevels - 1) / 2;
+            const cz = (D - 1) / 2;
+            
+            // Adjust cell size based on D - same spacing for all axes!
+            const adjustedCellSize = cellSize * (4 / D);
+            // Y spacing should be proportional to make it cube-like
+            // Scale Y to match the X-Z plane size: D units across, numLevels units tall
+            // To make cube-like: Y spacing = X spacing * (D / numLevels)
+            // yStretch: 100 = cube, >100 = taller, <100 = flatter
+            const adjustedLevelGap = adjustedCellSize * (D - 1) / (numLevels - 1 || 1) * (yStretch / 100);
+            
+            let px = (x - cx) * adjustedCellSize;
+            let py = (y - cy) * adjustedLevelGap;
+            let pz = (z - cz) * adjustedCellSize;
+            
+            const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+            const rx = px * cosY - pz * sinY;
+            const rz = px * sinY + pz * cosY;
+            
+            const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+            const ry = py * cosX - rz * sinX;
+            const rz2 = py * sinX + rz * cosX;
+            
+            return {
+                x: rx * zoom + canvas.width / 2,
+                y: ry * zoom + canvas.height / 2,
+                depth: rz2
+            };
+        }
+        
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawLevelPlanes();
+            
+            // Draw CC chain connections (separate CC1/CC2)
+            if (showCC1Lines || showCC2Lines) {
+                const nToCell = new Map();
+                gridData.forEach(c => nToCell.set(c.n, c));
+                
+                function drawChains(chains, color) {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = D <= 16 ? 1.5 : 1;
+                    chains.forEach(ch => {
+                        for (let i = 0; i < ch.length - 1; i++) {
+                            const a = nToCell.get(ch[i]), b = nToCell.get(ch[i+1]);
+                            if (!a || !b) continue;
+                            if (levelFilter >= 0 && a.y !== levelFilter && b.y !== levelFilter) continue;
+                            const pa = project(a.x, a.y, a.z), pb = project(b.x, b.y, b.z);
+                            ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+                        }
+                    });
+                }
+                
+                if (showCC1Lines) drawChains(cc1Chains, 'rgba(239,68,68,0.5)');
+                if (showCC2Lines) drawChains(cc2Chains, 'rgba(59,130,246,0.5)');
+            }
+            
+            const sorted = gridData.map(cell => {
+                const p = project(cell.x, cell.y, cell.z);
+                return { ...cell, screenX: p.x, screenY: p.y, depth: p.depth };
+            }).sort((a, b) => a.depth - b.depth);
+            
+            cellPositions = [];
+            
+            const baseCellSize = cellSize * (4 / D) * 0.7;
+            
+            for (const cell of sorted) {
+                if (levelFilter >= 0 && cell.y !== levelFilter) continue;
+                
+                const { n, core, screenX, screenY, depth } = cell;
+                const isHighlight = coreHighlight > 0 && core === coreHighlight;
+                const isSelected = selectedNumber === n;
+                const isHovered = hoveredCell && hoveredCell.n === n;
+                
+                const depthFactor = 1 + depth / 500;
+                const size = Math.max(baseCellSize * zoom * depthFactor, 8);
+                const colors = getColor(cell);
+                
+                ctx.save();
+                
+                if (isHighlight) { ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 10; }
+                
+                ctx.fillStyle = isSelected ? '#ffd700' : colors.bg;
+                const half = size / 2;
+                ctx.beginPath();
+                ctx.roundRect(screenX - half, screenY - half, size, size, 3);
+                ctx.fill();
+                
+                if (isPow2(n)) {
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+                if (isHighlight || isSelected || isHovered) {
+                    ctx.strokeStyle = isSelected ? '#fff' : (isHovered ? '#00d4ff' : '#ffd700');
+                    ctx.lineWidth = isSelected ? 2 : 1.5;
+                    ctx.stroke();
+                }
+                
+                if (size > 14 && D <= 16) {
+                    ctx.fillStyle = isSelected ? '#000' : colors.text;
+                    ctx.font = `600 ${Math.max(size * 0.4, 8)}px 'JetBrains Mono', monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(n.toString(), screenX, screenY);
+                }
+                
+                ctx.restore();
+                cellPositions.push({ ...cell, screenX, screenY, size });
+            }
+            
+            updateLevelIndicator();
+        }
+        
+        function drawLevelPlanes() {
+            ctx.strokeStyle = 'rgba(100,100,140,0.12)';
+            ctx.lineWidth = 1;
+            
+            for (let y = 0; y < numLevels; y++) {
+                if (levelFilter >= 0 && y !== levelFilter) continue;
+                
+                const corners = [
+                    project(0, y, 0),
+                    project(D-1, y, 0),
+                    project(D-1, y, D-1),
+                    project(0, y, D-1)
+                ];
+                
+                ctx.beginPath();
+                ctx.moveTo(corners[0].x, corners[0].y);
+                for (let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
+                ctx.closePath();
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = 'rgba(100,100,140,0.06)';
+            for (let x = 0; x < D; x += Math.max(1, D-1)) {
+                for (let z = 0; z < D; z += Math.max(1, D-1)) {
+                    const p1 = project(x, 0, z);
+                    const p2 = project(x, numLevels-1, z);
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        // Interaction
+        canvas.addEventListener('mousedown', e => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => { isDragging = false; hoveredCell = null; hideTooltip(); render(); });
+        
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+            
+            if (isDragging) {
+                angleY += (e.clientX - lastMX) * 0.01;
+                angleX += (e.clientY - lastMY) * 0.01;
+                angleX = Math.max(-Math.PI/2, Math.min(Math.PI/2, angleX));
+                lastMX = e.clientX; lastMY = e.clientY;
+                render();
+            } else {
+                hoveredCell = null;
+                for (let i = cellPositions.length - 1; i >= 0; i--) {
+                    const c = cellPositions[i];
+                    if (Math.abs(mx - c.screenX) < c.size/2 && Math.abs(my - c.screenY) < c.size/2) {
+                        hoveredCell = c;
+                        break;
+                    }
+                }
+                updateTooltip(mx, my);
+                render();
+            }
+        });
+        
+        canvas.addEventListener('click', () => { if (hoveredCell) selectNumber(hoveredCell); });
+        canvas.addEventListener('wheel', e => { e.preventDefault(); zoom = Math.max(0.3, Math.min(3, zoom * (e.deltaY > 0 ? 0.9 : 1.1))); render(); });
+        
+        function updateTooltip(mx, my) {
+            const tt = document.getElementById('tooltip');
+            if (hoveredCell) {
+                document.getElementById('ttNum').textContent = hoveredCell.n;
+                document.getElementById('ttLevel').textContent = `${hoveredCell.y} (bitLen=${hoveredCell.level})`;
+                document.getElementById('ttPos').textContent = `(${hoveredCell.x}, ${hoveredCell.z})`;
+                document.getElementById('ttCore').textContent = hoveredCell.core;
+                document.getElementById('ttV2').textContent = hoveredCell.v2Val;
+                // p+1 info
+                if (hoveredCell.isPrimeN) {
+                    const p1 = hoveredCell.n + 1;
+                    document.getElementById('ttCC1').textContent = hoveredCell.p1Idx >= 0 
+                        ? `p+1=${p1} (÷${NINE_PRIMES[hoveredCell.p1Idx]})` 
+                        : `p+1=${p1} (2^k)`;
+                } else {
+                    document.getElementById('ttCC1').textContent = factorStr(hoveredCell.n);
+                }
+                const hcc = ccMember.get(hoveredCell.n);
+                document.getElementById('ttCC2').textContent = hcc ? 
+                    (hcc.cc1 ? 'CC1·'+hcc.cc1.length : '') + (hcc.cc1&&hcc.cc2?' | ':'') + (hcc.cc2 ? 'CC2·'+hcc.cc2.length : '') 
+                    : '—';
+                tt.style.left = (mx + 15) + 'px';
+                tt.style.top = (my + 15) + 'px';
+                tt.classList.add('visible');
+            } else {
+                tt.classList.remove('visible');
+            }
+        }
+        
+        function hideTooltip() { document.getElementById('tooltip').classList.remove('visible'); }
+        
+        function selectNumber(cell) {
+            selectedNumber = cell.n;
+            document.getElementById('selectedSection').style.display = 'block';
+            document.getElementById('selNum').textContent = cell.n;
+            document.getElementById('selBin').textContent = cell.n.toString(2);
+            document.getElementById('selLevel').textContent = `Y=${cell.y}`;
+            document.getElementById('selCore').textContent = cell.core;
+            document.getElementById('selV2').textContent = cell.v2Val;
+            document.getElementById('selPos').textContent = `${cell.x},${cell.z}`;
+            
+            // Build ray
+            const ray = [];
+            let n = cell.n;
+            // Go up
+            while (n >= 2) {
+                ray.unshift(n);
+                if (n % 2 === 1) break;
+                n = n / 2;
+            }
+            // Go down
+            n = cell.n * 2;
+            while (n <= bottomEnd) {
+                ray.push(n);
+                n *= 2;
+            }
+            document.getElementById('selRay').textContent = ray.join(' → ');
+            
+            // p+1 info
+            if (cell.isPrimeN) {
+                const p1 = cell.n + 1;
+                document.getElementById('selP1').textContent = `${cell.n}+1 = ${p1} = ${factorStr(p1)}`;
+            } else {
+                document.getElementById('selP1').textContent = `${cell.n} = ${factorStr(cell.n)} (composite)`;
+            }
+            
+            // CC info
+            const scc = ccMember.get(cell.n);
+            document.getElementById('selCC1').textContent = scc && scc.cc1 ? scc.cc1.join(' → ') : '—';
+            document.getElementById('selCC2').textContent = scc && scc.cc2 ? scc.cc2.join(' → ') : '—';
+            
+            render();
+        }
+        
+        function updateLegend() {
+            const leg = document.getElementById('legend');
+            let items = [];
+            
+            switch (colorMode) {
+                case 'oddCore':
+                    items = [1,3,5,7,9,11,13,15].map(c => {
+                        const [h] = coreColors[c] || [(c*137)%360];
+                        return [`hsl(${h},60%,42%)`, `Core ${c}`];
+                    });
+                    break;
+                case 'depth':
+                    items = [['hsl(0,50%,12%)','Prime dark'],['hsl(0,50%,62%)','Prime bright'],
+                             ['hsl(220,25%,12%)','Comp dark'],['hsl(220,25%,62%)','Comp bright']];
+                    break;
+                case 'factor':
+                    items = NINE_LABELS.map((l,i) => [NINE_COLORS[i], `p+1÷${l}`]);
+                    items.push(['#ffffff', 'p+1=2^k']);
+                    break;
+                case 'prime':
+                    items = [['#ff4466','Prime'],['hsl(220,20%,20%)','Composite']];
+                    break;
+                case 'cunningham':
+                    items = [
+                        ['#4a1a1a', 'CC1 (2p+1)'],
+                        ['#1a2a4a', 'CC2 (2p−1)'],
+                        ['#1a4a3a', 'Both kinds'],
+                        ['#2a2a3a', 'Prime'],
+                        ['#1a1a24', 'Composite']
+                    ];
+                    break;
+                case 'level':
+                    items = Array.from({length: Math.min(numLevels, 6)}, (_, i) => {
+                        const [h] = levelColors[i % levelColors.length];
+                        return [`hsl(${h},70%,40%)`, `Y=${i}`];
+                    });
+                    break;
+                case 'v2':
+                    items = [0,1,2,3,4,5].map(v => [`hsl(${v*50},70%,42%)`, `v₂=${v}`]);
+                    break;
+                case 'mod8':
+                    items = [0,1,2,3,4,5,6,7].map(m => {
+                        const c = ['#3a3a5a','#1e3a5f','#2a4f2a','#5f3a1e','#1e4a5f','#1e5f3a','#5f2a3a','#5f1e5f'][m];
+                        return [c, `mod ${m}`];
+                    });
+                    break;
+            }
+            
+            leg.innerHTML = items.map(([bg, label]) => 
+                `<div class="legend-item"><div class="legend-color" style="background:${bg}"></div><span>${label}</span></div>`
+            ).join('');
+        }
+        
+        // Event handlers
+        document.getElementById('baseSize').onchange = async function() { D = +this.value; selectedNumber = null; await generateGrid(); updateLegend(); render(); };
+        document.getElementById('colorMode').onchange = function() { colorMode = this.value; updateLegend(); render(); };
+        document.getElementById('cellSize').oninput = function() { cellSize = +this.value; render(); };
+        document.getElementById('yStretch').oninput = function() { yStretch = +this.value; render(); };
+        document.getElementById('levelFilter').onchange = function() { levelFilter = +this.value; render(); };
+        document.getElementById('coreHighlight').onchange = function() { coreHighlight = +this.value; render(); };
+        document.getElementById('showCC1Lines').onchange = function() { showCC1Lines = this.checked; render(); };
+        document.getElementById('showCC2Lines').onchange = function() { showCC2Lines = this.checked; render(); };
+        
+        document.getElementById('rotL').onclick = () => { angleY -= Math.PI/8; render(); };
+        document.getElementById('rotR').onclick = () => { angleY += Math.PI/8; render(); };
+        document.getElementById('tiltU').onclick = () => { angleX = Math.max(-Math.PI/2, angleX - Math.PI/12); render(); };
+        document.getElementById('tiltD').onclick = () => { angleX = Math.min(Math.PI/2, angleX + Math.PI/12); render(); };
+        document.getElementById('resetView').onclick = () => { angleX = 22*Math.PI/180; angleY = -32*Math.PI/180; zoom = 1; render(); };
+        document.getElementById('bottomView').onclick = () => { angleX = Math.PI/2; angleY = 0; render(); };
+        document.getElementById('sideView').onclick = () => { angleX = 0; angleY = -Math.PI/2; render(); };
+        document.getElementById('topView').onclick = () => { angleX = -Math.PI/2; angleY = 0; render(); };
+        
+        // Init
+        window.addEventListener('resize', resize);
+        (async () => { await generateGrid(); updateLegend(); resize(); })();
+    </script>
+</body>
+</html>

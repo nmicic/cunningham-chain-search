@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cunningham Chain Analyzer v13</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        :root {
+            --bg0: #0a0e14; --bg1: #11161f; --bg2: #1a2233; --bg3: #243044;
+            --tx0: #e2e8f0; --tx1: #94a3b8; --tx2: #64748b;
+            --cyan: #22d3ee; --green: #34d399; --yellow: #fbbf24;
+            --red: #f87171; --purple: #c084fc; --blue: #60a5fa; --orange: #fb923c;
+            --border: #2d3a4f;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'SF Mono','Consolas','Monaco',monospace; background: var(--bg0); color: var(--tx0); font-size: 11px; line-height: 1.4; }
+        .app { max-width: 1600px; margin: 0 auto; padding: 8px 12px; }
+
+        .topbar { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); margin-bottom: 8px; flex-wrap: wrap; }
+        .topbar h1 { font-size: 13px; color: var(--cyan); white-space: nowrap; }
+        .topbar input { flex: 1; min-width: 180px; padding: 5px 8px; font: inherit; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--tx0); }
+        .topbar input:focus { outline: none; border-color: var(--blue); }
+        .btn { padding: 5px 12px; font: inherit; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-go { background: var(--blue); color: #000; }
+        .btn-go:hover { background: var(--cyan); }
+        .btn-expand { background: var(--bg3); color: var(--tx1); border: 1px solid var(--border); font-size: 9px; padding: 4px 8px; }
+        .btn-expand:hover { color: var(--tx0); border-color: var(--tx1); }
+        .examples { display: flex; gap: 4px; flex-wrap: wrap; }
+        .ex-btn { padding: 2px 6px; font: inherit; font-size: 9px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; color: var(--tx2); cursor: pointer; }
+        .ex-btn:hover { color: var(--tx0); border-color: var(--tx1); }
+
+        .panel { background: var(--bg1); border: 1px solid var(--border); border-radius: 5px; margin-bottom: 6px; overflow: hidden; }
+        .panel-h { padding: 4px 8px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+        .panel-h:hover { background: var(--bg3); }
+        .panel-h h2 { font-size: 10px; font-weight: 600; flex: 1; }
+        .panel-h .arrow { color: var(--tx2); font-size: 8px; transition: transform 0.2s; }
+        .panel-h .arrow.open { transform: rotate(90deg); }
+        .badge { padding: 1px 5px; border-radius: 6px; font-size: 9px; font-weight: 700; }
+        .bg { background: rgba(34,211,238,.15); color: var(--cyan); }
+        .bg-g { background: rgba(52,211,153,.15); color: var(--green); }
+        .bg-r { background: rgba(248,113,113,.15); color: var(--red); }
+        .bg-p { background: rgba(192,132,252,.15); color: var(--purple); }
+        .bg-y { background: rgba(251,191,36,.15); color: var(--yellow); }
+        .bg-o { background: rgba(251,146,60,.15); color: var(--orange); }
+        .panel-b { padding: 6px 8px; }
+        .panel-b.collapsed { display: none; }
+
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; }
+        @media (max-width: 1000px) { .grid3, .grid4 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
+
+        .prop { display: flex; justify-content: space-between; padding: 1px 0; font-size: 10px; }
+        .prop-k { color: var(--tx2); }
+        .prop-v { color: var(--tx0); font-weight: 500; text-align: right; word-break: break-all; max-width: 70%; }
+        .mono { color: var(--cyan); font-family: inherit; }
+
+        .vbox { background: var(--bg3); padding: 3px 5px; border-radius: 3px; font-size: 10px; color: var(--cyan); overflow-x: auto; white-space: nowrap; margin: 2px 0; }
+        
+        /* Copyable value box */
+        .copybox { background: var(--bg2); padding: 4px 6px; border-radius: 3px; font-size: 9px; color: var(--cyan); margin: 2px 0; cursor: pointer; position: relative; word-break: break-all; border: 1px solid var(--border); }
+        .copybox:hover { background: var(--bg3); border-color: var(--tx2); }
+        .copybox::after { content: '📋'; position: absolute; right: 4px; top: 3px; font-size: 8px; opacity: 0.5; }
+        .copybox:hover::after { opacity: 1; }
+        .copybox.copied { border-color: var(--green); }
+        .copybox.copied::after { content: '✓'; color: var(--green); opacity: 1; }
+
+        .fact { color: var(--cyan); font-size: 9px; background: var(--bg3); padding: 2px 5px; border-radius: 3px; margin: 2px 0; word-break: break-all; }
+        .fact-tree { margin-left: 10px; padding-left: 8px; border-left: 1px solid var(--border); margin-top: 3px; }
+        .fact-item { margin: 2px 0; font-size: 9px; }
+        .fact-item .prime { color: var(--orange); font-weight: 600; }
+        .fact-item .sub { color: var(--cyan); margin-left: 6px; }
+
+        .depth-btns { display: flex; gap: 3px; margin-bottom: 4px; flex-wrap: wrap; }
+        .depth-btn { padding: 2px 8px; font: inherit; font-size: 9px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; color: var(--tx2); cursor: pointer; }
+        .depth-btn:hover { color: var(--tx0); border-color: var(--tx1); }
+        .depth-btn.active { background: var(--blue); color: #000; border-color: var(--blue); }
+        .depth-btn.computing { background: var(--yellow); color: #000; }
+
+        .tags { display: flex; flex-wrap: wrap; gap: 3px; }
+        .tag { padding: 1px 5px; border-radius: 6px; font-size: 9px; background: rgba(192,132,252,.12); color: var(--purple); }
+
+        .resgrid { display: flex; flex-wrap: wrap; gap: 3px; }
+        .resitem { background: var(--bg3); padding: 2px 5px; border-radius: 3px; font-size: 9px; }
+        .resitem .rm { color: var(--tx2); }
+        .resitem .rv { color: var(--cyan); font-weight: 600; }
+
+        .chain-wrap { max-height: 350px; overflow-y: auto; }
+        .chain-wrap::-webkit-scrollbar { width: 4px; }
+        .chain-wrap::-webkit-scrollbar-track { background: var(--bg1); }
+        .chain-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .ctbl { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .ctbl th { background: var(--bg3); padding: 2px 3px; text-align: left; color: var(--tx2); font-weight: 600; font-size: 9px; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; }
+        .ctbl td { padding: 2px 3px; border-bottom: 1px solid var(--bg2); vertical-align: middle; }
+        .ctbl tr:hover { background: var(--bg2); }
+        .ctbl tr.input-row { background: rgba(52,211,153,.06); }
+        .ctbl tr.breaker-row { background: rgba(248,113,113,.06); }
+        .ctbl tr.prime-row td:first-child { border-left: 2px solid var(--green); }
+        .ctbl tr.comp-row td:first-child { border-left: 2px solid var(--red); }
+        .ctbl .val { color: var(--cyan); word-break: break-all; max-width: 260px; }
+        .ctbl .val[title] { cursor: pointer; }
+        .ctbl .val[title]:hover { background: var(--bg3); border-radius: 2px; }
+        .ctbl .idx { color: var(--blue); font-weight: 700; text-align: center; width: 24px; }
+        .ctbl .num { text-align: right; white-space: nowrap; color: var(--tx1); }
+        .ctbl .res { text-align: center; font-size: 9px; min-width: 18px; }
+        .ctbl .res.immune { color: var(--green); font-weight: 700; }
+        .ctbl .res.hit { background: var(--red); color: #fff; font-weight: 700; border-radius: 2px; }
+
+        .shadow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 2px; margin-top: 4px; }
+        .shadow-item { background: var(--bg3); padding: 2px 3px; border-radius: 2px; font-size: 8px; text-align: center; }
+        .shadow-item.immune { border: 1px solid var(--green); }
+        .shadow-item .sq { color: var(--tx2); }
+        .shadow-item .sr { color: var(--cyan); font-weight: 600; }
+        .shadow-item .sf { color: var(--orange); }
+
+        .autopsy { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3); border-radius: 4px; padding: 5px 8px; margin-top: 4px; }
+
+        .val-tbl { width: 100%; font-size: 9px; border-collapse: collapse; }
+        .val-tbl th, .val-tbl td { padding: 2px 4px; border-bottom: 1px solid var(--bg2); text-align: center; }
+        .val-tbl th { background: var(--bg3); color: var(--tx2); }
+        .val-tbl .hi { color: var(--green); font-weight: 700; }
+
+        .spine-row { display: flex; gap: 6px; font-size: 9px; padding: 1px 0; }
+        .spine-row .lbl { color: var(--tx2); width: 50px; }
+        .spine-row .val { color: var(--cyan); flex: 1; }
+        .spine-row.prime .val { color: var(--green); }
+
+        .algebraic { font-size: 9px; color: var(--tx1); margin: 4px 0; background: var(--bg2); padding: 4px; border-radius: 3px; }
+        .algebraic code { background: var(--bg3); padding: 1px 4px; border-radius: 2px; color: var(--cyan); }
+
+        .crt-row { display: flex; gap: 8px; font-size: 9px; padding: 2px 0; }
+        .crt-row .prime { color: var(--orange); width: 30px; }
+        .crt-row .req { color: var(--cyan); }
+
+        .err { background: rgba(248,113,113,.1); border: 1px solid var(--red); border-radius: 4px; padding: 8px; color: var(--red); text-align: center; margin-bottom: 8px; }
+        .loading { text-align: center; padding: 16px; color: var(--tx2); }
+        .note { font-size: 8px; color: var(--tx2); margin-top: 4px; font-style: italic; }
+
+        .section-title { font-size: 11px; font-weight: 700; color: var(--cyan); margin: 12px 0 6px 0; padding-bottom: 3px; border-bottom: 1px solid var(--border); }
+
+        /* Share/Export buttons */
+        .btn-share { padding: 4px 10px; font: inherit; font-size: 9px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; color: var(--tx1); cursor: pointer; transition: all 0.2s; }
+        .btn-share:hover { background: var(--blue); color: #000; border-color: var(--blue); }
+
+        /* Footer */
+        .footer { margin-top: 24px; padding: 12px; border-top: 1px solid var(--border); text-align: center; font-size: 9px; color: var(--tx2); }
+        .footer a { color: var(--cyan); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+        /* Target CC selector */
+        .target-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: var(--bg2); border-radius: 4px; }
+        .target-row label { color: var(--tx2); font-size: 10px; }
+        .target-row select { background: var(--bg3); border: 1px solid var(--border); color: var(--tx0); padding: 3px 6px; border-radius: 3px; font: inherit; }
+        .target-row .info { font-size: 9px; color: var(--tx1); }
+
+        /* Survival bar */
+        .survival-bar { height: 16px; background: var(--bg3); border-radius: 3px; overflow: hidden; display: flex; margin: 4px 0; }
+        .survival-bar .seg { height: 100%; }
+        .survival-bar .seg.prime { background: var(--green); }
+        .survival-bar .seg.comp { background: var(--red); }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useCallback, useEffect} = React;
+
+// ===== PRIMORIALS =====
+const PRIMES_FOR_PRIMORIAL = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+const PRIMORIALS = {};
+{
+    let prod = 1n;
+    for(const p of PRIMES_FOR_PRIMORIAL){
+        prod *= BigInt(p);
+        PRIMORIALS[p] = prod;
+    }
+}
+// PRIMORIALS[53] = 32589158477190044730n, etc.
+
+function getPrimorial(p){
+    if(PRIMORIALS[p]) return PRIMORIALS[p];
+    // Compute if not cached
+    let prod = 1n;
+    for(const q of PRIMES_FOR_PRIMORIAL){
+        if(q > p) break;
+        prod *= BigInt(q);
+    }
+    return prod;
+}
+
+// Parse input - supports:
+// - Decimal: 12345
+// - Hex: 0x1234 or 1234h
+// - Primorial: 123*53# or 123×53#×2 or 123*53#*2-1 or 123*53#+1
+function parseInput(str){
+    str = str.trim();
+    
+    // Replace × with * for uniformity
+    str = str.replace(/×/g, '*');
+    
+    // Check for primorial notation: number * p# [* number] [+/- number]
+    const primorialMatch = str.match(/^(\d+)\s*\*\s*(\d+)#\s*(?:\*\s*(\d+))?\s*([+-]\s*\d+)?$/);
+    if(primorialMatch){
+        const k = BigInt(primorialMatch[1]);
+        const p = parseInt(primorialMatch[2]);
+        const m = primorialMatch[3] ? BigInt(primorialMatch[3]) : 1n;
+        const offset = primorialMatch[4] ? BigInt(primorialMatch[4].replace(/\s/g,'')) : 0n;
+        const primorial = getPrimorial(p);
+        return k * primorial * m + offset;
+    }
+    
+    // Check for simple primorial: p# or p#*k or p#+/-offset
+    const simplePrimorialMatch = str.match(/^(\d+)#\s*(?:\*\s*(\d+))?\s*([+-]\s*\d+)?$/);
+    if(simplePrimorialMatch){
+        const p = parseInt(simplePrimorialMatch[1]);
+        const m = simplePrimorialMatch[2] ? BigInt(simplePrimorialMatch[2]) : 1n;
+        const offset = simplePrimorialMatch[3] ? BigInt(simplePrimorialMatch[3].replace(/\s/g,'')) : 0n;
+        const primorial = getPrimorial(p);
+        return primorial * m + offset;
+    }
+    
+    // Hex with 0x prefix
+    if(str.startsWith('0x') || str.startsWith('0X')){
+        return BigInt(str);
+    }
+    
+    // Pure decimal
+    if(/^[0-9]+$/.test(str)){
+        return BigInt(str);
+    }
+    
+    // Hex without prefix (only if contains a-f)
+    if(/^[0-9a-fA-F]+$/.test(str) && /[a-fA-F]/.test(str)){
+        return BigInt('0x' + str);
+    }
+    
+    throw new Error('Invalid format. Use: decimal, 0x hex, or primorial (e.g., 123*53#*2+1)');
+}
+
+// Format the input expression for display
+function formatInputExpression(str){
+    str = str.trim().replace(/×/g, '*');
+    const primorialMatch = str.match(/^(\d+)\s*\*\s*(\d+)#/);
+    if(primorialMatch){
+        return str; // Return primorial notation as-is
+    }
+    return null; // Not a primorial expression
+}
+
+// Copy helper with visual feedback
+function copyToClipboard(text){
+    navigator.clipboard.writeText(text).then(()=>{
+        document.body.classList.add('copied-feedback');
+        setTimeout(()=>document.body.classList.remove('copied-feedback'),300);
+    });
+}
+
+// URL params helper
+function getUrlParams(){
+    const params = new URLSearchParams(window.location.search);
+    return {
+        n: params.get('n') || '',
+        target: parseInt(params.get('target')) || 16,
+        fmt: params.get('fmt') || 'hex'
+    };
+}
+
+function updateUrl(n, target, fmt){
+    const url = new URL(window.location);
+    if(n) url.searchParams.set('n', n);
+    if(target) url.searchParams.set('target', target);
+    if(fmt) url.searchParams.set('fmt', fmt);
+    window.history.replaceState({}, '', url);
+}
+
+function generateShareLink(n, target, fmt){
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set('n', n);
+    url.searchParams.set('target', target);
+    url.searchParams.set('fmt', fmt);
+    return url.toString();
+}
+
+function generateExport(res){
+    const lines = [
+        '═══════════════════════════════════════════════════════════════',
+        'CUNNINGHAM CHAIN ANALYSIS',
+        '═══════════════════════════════════════════════════════════════',
+        ''
+    ];
+    
+    if(res.inputExpr){
+        lines.push(`Expression: ${res.inputExpr}`);
+    }
+    lines.push(`Input (hex): ${toHex(res.n)}`);
+    lines.push(`Input (dec): ${res.n.toString()}`);
+    lines.push(`Bits: ${res.bits} | Digits: ${res.digits}`);
+    lines.push(`Status: ${res.prm ? 'PRIME' : 'COMPOSITE'}`);
+    lines.push('');
+    
+    // Check for bi-twin
+    const isBiTwin = res.candTrace1.achievedLen >= 2 && res.candTrace1.achievedLen === res.candTrace2.achievedLen;
+    if(isBiTwin){
+        lines.push(`═══ RESULT: BI-TWIN CC${res.candTrace1.achievedLen} ═══`);
+    } else {
+        lines.push(`═══ RESULT: CC${res.candTrace1.achievedLen} (1st kind) | CC${res.candTrace2.achievedLen} (2nd kind) ═══`);
+    }
+    lines.push('');
+    
+    // First kind details
+    if(res.cc1 && res.cc1.len > 0){
+        lines.push(`FIRST KIND CHAIN (CC${res.cc1.len}):`);
+        lines.push(`  Root: ${toHex(res.cc1.members[0].val)}`);
+        lines.push(`  k = ${res.cc1.kFact}`);
+        lines.push(`  Immune to: ${res.cc1.immunePrimes.length ? res.cc1.immunePrimes.join(', ') : 'none'}`);
+        if(res.cc1.brk){
+            lines.push(`  Breaker: position ${res.cc1.len}, smallest factor ÷${res.cc1.brk.smallest}`);
+        }
+        lines.push(`  Heat: ${res.cc1.heat.toFixed(4)}`);
+        lines.push('');
+        lines.push('  Members:');
+        res.cc1.members.forEach((m, i) => {
+            lines.push(`    ${i}: ${toHex(m.val)} (${m.bits}b)`);
+        });
+        lines.push('');
+    }
+    
+    // Second kind details
+    if(res.cc2 && res.cc2.len > 0){
+        lines.push(`SECOND KIND CHAIN (CC${res.cc2.len}):`);
+        lines.push(`  Root: ${toHex(res.cc2.members[0].val)}`);
+        lines.push(`  k = ${res.cc2.kFact}`);
+        lines.push(`  Immune to: ${res.cc2.immunePrimes.length ? res.cc2.immunePrimes.join(', ') : 'none'}`);
+        if(res.cc2.brk){
+            lines.push(`  Breaker: position ${res.cc2.len}, smallest factor ÷${res.cc2.brk.smallest}`);
+        }
+        lines.push(`  Heat: ${res.cc2.heat.toFixed(4)}`);
+        lines.push('');
+    }
+    
+    // 2-adic properties
+    lines.push('2-ADIC PROPERTIES:');
+    lines.push(`  ν₂(p−1) = ${res.v2pm1}`);
+    lines.push(`  ν₂(p+1) = ${res.v2pp1}`);
+    lines.push(`  odd(p−1) = ${toHex(res.oddPm1)}`);
+    lines.push(`  odd(p+1) = ${toHex(res.oddPp1)}`);
+    lines.push('');
+    
+    // Machine geometry
+    lines.push('MACHINE GEOMETRY:');
+    lines.push(`  Popcount: ${res.hw} (${(res.hw/res.bits*100).toFixed(1)}%)`);
+    lines.push(`  NAF weight: ${res.nw}`);
+    lines.push(`  Trailing 1s: ${res.to}`);
+    lines.push(`  Transitions: ${res.transitions}`);
+    lines.push('');
+    
+    lines.push('═══════════════════════════════════════════════════════════════');
+    lines.push('Generated by Cunningham Chain Analyzer v13');
+    lines.push('© 2026 Nenad Mićić (linkedin.com/in/nenadmicic) & Claude (Anthropic)');
+    lines.push('License: Apache-2.0');
+    lines.push('═══════════════════════════════════════════════════════════════');
+    
+    return lines.join('\n');
+}
+
+// ===== MATH ENGINE =====
+function modPow(b,e,m){let r=1n;b=b%m;while(e>0n){if(e%2n===1n)r=(r*b)%m;e/=2n;b=(b*b)%m;}return r;}
+function gcd(a,b){while(b!==0n){[a,b]=[b,a%b];}return a;}
+
+function isPrime(n){
+    if(typeof n!=='bigint')n=BigInt(n);
+    if(n<2n)return false;if(n===2n||n===3n)return true;if(n%2n===0n)return false;
+    let r=0n,d=n-1n;while(d%2n===0n){r++;d/=2n;}
+    for(const a of[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n,41n,43n]){
+        if(a>=n)continue;let x=modPow(a,d,n);if(x===1n||x===n-1n)continue;
+        let comp=true;for(let i=0n;i<r-1n;i++){x=modPow(x,2n,n);if(x===n-1n){comp=false;break;}}
+        if(comp)return false;
+    }return true;
+}
+
+function v2(n){if(n===0n)return 0;let v=0;while(n%2n===0n){v++;n/=2n;}return v;}
+function oddPart(n){while(n%2n===0n)n/=2n;return n;}
+function popcount(n){let c=0;while(n>0n){if(n%2n===1n)c++;n/=2n;}return c;}
+function trailingOnes(n){return v2(n+1n);}
+function nafWeight(n){if(n<0n)n=-n;let w=0;while(n>0n){if(n%2n===1n){w++;n-=(2n-(n%4n));}n>>=1n;}return w;}
+
+function pollardRho(n,max=50000){
+    if(n%2n===0n)return 2n;let x=2n,y=2n,d=1n,iter=0;
+    const f=x=>(x*x+1n)%n;
+    while(d===1n&&iter<max){x=f(x);y=f(f(y));d=gcd(x>y?x-y:y-x,n);iter++;}
+    return d!==n?d:null;
+}
+
+function factorize(n,tl=2000){
+    if(typeof n!=='bigint')n=BigInt(n);if(n<=1n)return[];
+    const st=Date.now(),facs=new Map();let d=2n;
+    while(d*d<=n&&d<=100000n){while(n%d===0n){facs.set(d,(facs.get(d)||0)+1);n/=d;}d+=d===2n?1n:2n;}
+    const q=[n>1n?n:null].filter(Boolean);
+    while(q.length>0&&Date.now()-st<tl){
+        const c=q.pop();if(!c||c===1n)continue;
+        if(isPrime(c)){facs.set(c,(facs.get(c)||0)+1);continue;}
+        const f=pollardRho(c);if(f&&f!==c){q.push(f);q.push(c/f);}else{facs.set(c,(facs.get(c)||0)+1);}
+    }
+    for(const c of q)if(c&&c>1n)facs.set(c,(facs.get(c)||0)+1);
+    return[...facs.entries()].map(([p,e])=>({p,e,pr:isPrime(p)})).sort((a,b)=>a.p<b.p?-1:1);
+}
+
+function fmtFact(fs){if(!fs||!fs.length)return'1';return fs.map(f=>{const s=f.pr?'':' [C]';return f.e===1?`${f.p}${s}`:`${f.p}^${f.e}${s}`;}).join(' × ');}
+function fmtFactTagged(fs){
+    if(!fs||!fs.length)return'1';
+    return fs.map(f=>{
+        const bits=f.p.toString(2).length;
+        if(f.pr){
+            if(bits>24)return f.e===1?`P${bits}b`:`P${bits}b^${f.e}`;
+            return f.e===1?`${f.p}`:`${f.p}^${f.e}`;
+        }else{
+            if(bits>24)return f.e===1?`C${bits}b`:`C${bits}b^${f.e}`;
+            return f.e===1?`${f.p}[C]`:`${f.p}[C]^${f.e}`;
+        }
+    }).join(' × ');
+}
+
+function smoothSplit(n,B=31){
+    const primes=[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n].filter(p=>p<=BigInt(B));
+    let smooth=1n,rem=n;
+    for(const p of primes){while(rem%p===0n){smooth*=p;rem/=p;}}
+    return{smooth,rem,smoothBits:smooth.toString(2).length,remBits:rem.toString(2).length};
+}
+
+const ANALYSIS_PRIMES=[3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+const RESIDUE_PRIMES=[3,5,7,11,13,17,19,23];
+
+function modInverse(a,m){
+    let[old_r,r]=[a,m],[old_s,s]=[1n,0n];
+    while(r!==0n){const q=old_r/r;[old_r,r]=[r,old_r-q*r];[old_s,s]=[s,old_s-q*s];}
+    return((old_s%m)+m)%m;
+}
+
+function isImmunized(n,q,kind='first'){const r=Number(n%BigInt(q));return kind==='first'?r===q-1:r===1;}
+
+function killPos(r,q,kind='first',mx=32){
+    const inv2=Number(modInverse(2n,BigInt(q)));
+    let pow2inv=1;
+    for(let k=0;k<mx;k++){
+        const forbidden=kind==='first'?(pow2inv-1+q)%q:(q-pow2inv+1)%q;
+        if(r===forbidden)return k;
+        pow2inv=(pow2inv*inv2)%q;
+    }
+    return null;
+}
+
+function shadowAnalysis(n,kind='first'){
+    n=BigInt(n);
+    return ANALYSIS_PRIMES.map(q=>{
+        const r=Number(n%BigInt(q));
+        const immune=isImmunized(n,q,kind);
+        const kp=immune?null:killPos(r,q,kind);
+        return{q,r,immune,killPos:kp};
+    });
+}
+
+// Shadow hit: first small prime that divides n
+function shadowHit(n){
+    for(const q of ANALYSIS_PRIMES){
+        if(n%BigInt(q)===0n)return q;
+    }
+    return null;
+}
+
+// Small factor hint
+function smallFactorHint(n,bound=1000){
+    if(n<=1n)return null;
+    for(let q=2n;q<=BigInt(bound);q++){
+        if(n%q===0n)return q;
+    }
+    return null;
+}
+
+function heat(len){return 1.0/(len+1);}
+
+function gridPos(n){const row=n.toString(2).length;const mask=(1n<<BigInt(row-1))-1n;const col=n&mask;return{row,col};}
+
+// ===== CANDIDATE POSITION TRACE (from GP cc_candidate_positions) =====
+function candidatePositions(n,targetLen,kind='first'){
+    n=BigInt(n);
+    const positions=[];
+    let cur=n;
+    let achievedLen=0;
+    let chainBroken=false;
+    
+    for(let pos=0;pos<=targetLen;pos++){
+        const prm=isPrime(cur);
+        const bits=cur.toString(2).length;
+        const hitQ=prm?null:shadowHit(cur);
+        const hint=prm?null:smallFactorHint(cur,1000);
+        const residues={};
+        for(const q of RESIDUE_PRIMES)residues[q]=Number(cur%BigInt(q));
+        
+        let marker='';
+        if(!chainBroken && prm){
+            // Still in the chain - count consecutive primes
+            achievedLen = pos + 1;
+        } else if(!chainBroken && !prm){
+            // First break!
+            chainBroken = true;
+            marker = 'BREAK';
+        }
+        
+        positions.push({
+            pos,val:cur,bits,prime:prm,hitQ,hint,marker,residues,
+            hw:popcount(cur),nw:nafWeight(cur),inChain:!chainBroken||prm&&!chainBroken
+        });
+        
+        cur=kind==='first'?2n*cur+1n:2n*cur-1n;
+    }
+    
+    return{positions,achievedLen,heat:heat(achievedLen)};
+}
+
+// Chain finding (for primes)
+function findCC1(p){
+    p=BigInt(p);if(!isPrime(p))return{chain:[],brk:null};
+    let s=p;while(true){const pr=(s-1n)/2n;if(pr<2n||(s-1n)%2n!==0n||!isPrime(pr))break;s=pr;}
+    const ch=[s];let c=s;
+    while(true){const nx=2n*c+1n;if(!isPrime(nx))return{chain:ch,brk:nx};ch.push(nx);c=nx;}
+}
+function findCC2(p){
+    p=BigInt(p);if(!isPrime(p))return{chain:[],brk:null};
+    let s=p;while(true){const pr=(s+1n)/2n;if(pr<2n||(s+1n)%2n!==0n||!isPrime(pr))break;s=pr;}
+    const ch=[s];let c=s;
+    while(true){const nx=2n*c-1n;if(nx<2n||!isPrime(nx))return{chain:ch,brk:nx>1n?nx:null};ch.push(nx);c=nx;}
+}
+function chainOrigin(start,kind){const v=kind===1?start+1n:start-1n;return{k:oddPart(v),exp:v2(v)};}
+
+function spineExplore(p){
+    const core=oddPart(p);
+    const results=[];
+    let cur=core;
+    for(let i=0;i<8&&cur.toString(2).length<200;i++){
+        results.push({type:'vertical',shift:i,val:cur,bits:cur.toString(2).length,prime:isPrime(cur)});
+        cur*=2n;
+    }
+    cur=2n*core+1n;
+    for(let i=0;i<6;i++){
+        results.push({type:'right',pos:i,val:cur,bits:cur.toString(2).length,prime:isPrime(cur)});
+        cur=2n*cur+1n;
+    }
+    return{core,results};
+}
+
+function gridNeighbors(p,radius=5){
+    const{row,col}=gridPos(p);
+    const neighbors=[];
+    for(let d=-radius;d<=radius;d++){
+        const newCol=col+BigInt(d);
+        if(newCol>=0n&&newCol<(1n<<BigInt(row-1))){
+            const n=(1n<<BigInt(row-1))+newCol;
+            const pr=isPrime(n);
+            let ccLen=0;
+            if(pr){const c=findCC1(n);ccLen=c.chain.length;}
+            neighbors.push({delta:d,col:newCol,val:n,prime:pr,ccLen,isRoot:d===0});
+        }
+    }
+    return{row,col,neighbors};
+}
+
+function primorialSignature(p){
+    const primorial=[2,3,5,7,11,13,17,19,23];
+    const pp1=p+1n;
+    const missing=primorial.filter(q=>pp1%BigInt(q)!==0n);
+    return{full:missing.length===0,missing,divides:primorial.filter(q=>pp1%BigInt(q)===0n)};
+}
+
+function classify(p){
+    p=BigInt(p);if(!isPrime(p))return[];const cl=[];
+    if(isPrime(2n*p+1n))cl.push('Sophie Germain');
+    if(p>2n&&(p-1n)%2n===0n&&isPrime((p-1n)/2n))cl.push('Safe prime');
+    if(isPrime(p+2n))cl.push('Twin');if(isPrime(p+4n))cl.push('Cousin');if(isPrime(p+6n))cl.push('Sexy');
+    return cl;
+}
+
+function prefixBits(n,len=8){const b=n.toString(2);return b.slice(0,Math.min(len,b.length));}
+function tailBits(n,len=8){const b=n.toString(2);return b.slice(-Math.min(len,b.length));}
+function transitionCount(n){const b=n.toString(2);let c=0;for(let i=1;i<b.length;i++)if(b[i]!==b[i-1])c++;return c;}
+function longestRun(n,bit='1'){const b=n.toString(2);let best=0,cur=0;for(const c of b){if(c===bit){cur++;if(cur>best)best=cur;}else cur=0;}return best;}
+
+function toHex(n){return'0x'+n.toString(16).toUpperCase();}
+function fmtHexShort(n,mx=40){const h=n.toString(16).toUpperCase();return h.length<=mx?'0x'+h:'0x'+h.slice(0,16)+'…'+h.slice(-12)+` (${h.length}h)`;}
+function fmtVal(n,fmt){
+    n=BigInt(n);
+    if(fmt==='hex')return fmtHexShort(n);
+    if(fmt==='dec'){const s=n.toString();return s.length<=40?s:s.slice(0,14)+'…'+s.slice(-14)+` (${s.length}d)`;}
+    const b=n.toString(2);return b.length>140?b.slice(0,50)+'…'+b.slice(-40):b;
+}
+
+function analyze(n,targetCC=20){
+    n=BigInt(n);
+    const bits=n.toString(2).length,digits=n.toString().length;
+    const hw=popcount(n),nw=nafWeight(n),to=trailingOnes(n);
+    const prm=isPrime(n);
+    const wheels=[6n,30n,210n,2310n].map(m=>({m:Number(m),r:Number(n%m)}));
+    const modRes=RESIDUE_PRIMES.map(p=>({m:p,r:Number(n%BigInt(p))}));
+
+    const res={n,bits,digits,hw,nw,to,prm,wheels,modRes,targetCC};
+    
+    // Always do candidate position trace
+    res.candTrace1=candidatePositions(n,targetCC,'first');
+    res.candTrace2=candidatePositions(n,targetCC,'second');
+    
+    // Factorization for input (works for both prime and composite)
+    res.fact=factorize(n);
+    res.factStr=fmtFact(res.fact);
+    
+    // 2-adic properties
+    res.v2pm1=v2(n-1n);res.v2pp1=v2(n+1n);
+    res.oddPm1=oddPart(n-1n);res.oddPp1=oddPart(n+1n);
+    res.smoothPm1=smoothSplit(n-1n);res.smoothPp1=smoothSplit(n+1n);
+    
+    // Motifs
+    res.prefix8=prefixBits(n,8);res.prefix16=prefixBits(n,16);
+    res.tail5=tailBits(n,5);res.tail8=tailBits(n,8);
+    res.transitions=transitionCount(n);
+    res.longestOnes=longestRun(n,'1');res.longestZeros=longestRun(n,'0');
+
+    // Shadow analysis from position 0
+    res.shadow1=shadowAnalysis(n,'first');
+    res.shadow2=shadowAnalysis(n,'second');
+
+    // Valuations
+    res.valuations=ANALYSIS_PRIMES.slice(0,12).map(q=>({
+        q,vpm1:v2BigForQ(n-1n,q),vpp1:v2BigForQ(n+1n,q)
+    }));
+
+    if(prm){
+        res.cls=classify(n);
+        res.primorialSig=primorialSignature(n);
+        
+        // Full chain finding for primes
+        const c1=findCC1(n);
+        if(c1.chain.length>0){
+            const o=chainOrigin(c1.chain[0],1);
+            const shadow=shadowAnalysis(c1.chain[0],'first');
+            const immunePrimes=shadow.filter(s=>s.immune).map(s=>s.q);
+            res.cc1={
+                len:c1.chain.length,pos:c1.chain.findIndex(x=>x===n)+1,
+                k:o.k,exp:o.exp,kFact:fmtFact(factorize(o.k)),kBits:o.k.toString(2).length,
+                shadow,immunePrimes,heat:heat(c1.chain.length),
+                members:c1.chain.map((p,i)=>{
+                    const pi=BigInt(p);const gp=gridPos(pi);
+                    const residues={};for(const q of RESIDUE_PRIMES)residues[q]=Number(pi%BigInt(q));
+                    return{i:i+1,val:pi,bits:pi.toString(2).length,hw:popcount(pi),nw:nafWeight(pi),to:trailingOnes(pi),
+                        gridRow:gp.row,gridCol:gp.col,isInput:pi===n,residues};
+                }),
+                brk:null
+            };
+            if(c1.brk){
+                const hits=ANALYSIS_PRIMES.filter(q=>c1.brk%BigInt(q)===0n);
+                const residues={};for(const q of RESIDUE_PRIMES)residues[q]=Number(c1.brk%BigInt(q));
+                res.cc1.brk={val:c1.brk,bits:c1.brk.toString(2).length,hw:popcount(c1.brk),nw:nafWeight(c1.brk),
+                    smallest:factorize(c1.brk)[0]?.p,hits,residues};
+            }
+        }
+
+        const c2=findCC2(n);
+        if(c2.chain.length>0){
+            const o=chainOrigin(c2.chain[0],2);
+            const shadow=shadowAnalysis(c2.chain[0],'second');
+            const immunePrimes=shadow.filter(s=>s.immune).map(s=>s.q);
+            res.cc2={
+                len:c2.chain.length,pos:c2.chain.findIndex(x=>x===n)+1,
+                k:o.k,exp:o.exp,kFact:fmtFact(factorize(o.k)),kBits:o.k.toString(2).length,
+                shadow,immunePrimes,heat:heat(c2.chain.length),
+                members:c2.chain.map((p,i)=>{
+                    const pi=BigInt(p);const gp=gridPos(pi);
+                    const residues={};for(const q of RESIDUE_PRIMES)residues[q]=Number(pi%BigInt(q));
+                    return{i:i+1,val:pi,bits:pi.toString(2).length,hw:popcount(pi),nw:nafWeight(pi),to:trailingOnes(pi),
+                        gridRow:gp.row,gridCol:gp.col,isInput:pi===n,residues};
+                }),
+                brk:null
+            };
+            if(c2.brk){
+                const hits=ANALYSIS_PRIMES.filter(q=>c2.brk%BigInt(q)===0n);
+                const residues={};for(const q of RESIDUE_PRIMES)residues[q]=Number(c2.brk%BigInt(q));
+                res.cc2.brk={val:c2.brk,bits:c2.brk.toString(2).length,hw:popcount(c2.brk),nw:nafWeight(c2.brk),
+                    smallest:factorize(c2.brk)[0]?.p,hits,residues};
+            }
+        }
+    }
+
+    return res;
+}
+
+function v2BigForQ(n,q){let v=0;const qb=BigInt(q);while(n%qb===0n){v++;n/=qb;}return v;}
+
+// ===== REACT COMPONENTS =====
+
+function CollapsiblePanel({title,badge,bc,defaultOpen=true,forceOpen,children}){
+    const[open,setOpen]=useState(defaultOpen);
+    const isOpen=forceOpen!==undefined?forceOpen:open;
+    return(
+        <div className="panel">
+            <div className="panel-h" onClick={()=>setOpen(!open)}>
+                <span className={`arrow ${isOpen?'open':''}`}>▶</span>
+                <h2>{title}</h2>
+                {badge&&<span className={`badge ${bc||'bg'}`}>{badge}</span>}
+            </div>
+            <div className={`panel-b ${isOpen?'':'collapsed'}`}>{children}</div>
+        </div>
+    );
+}
+
+function P({k,v,mono}){return<div className="prop"><span className="prop-k">{k}</span><span className={`prop-v ${mono?'mono':''}`}>{v}</span></div>;}
+
+// Copyable value component
+function CopyBox({value,label}){
+    const[copied,setCopied]=useState(false);
+    const copy=()=>{
+        navigator.clipboard.writeText(value).then(()=>{
+            setCopied(true);
+            setTimeout(()=>setCopied(false),1500);
+        });
+    };
+    return(
+        <div className={`copybox ${copied?'copied':''}`} onClick={copy} title="Click to copy full value">
+            {label&&<span style={{color:'var(--tx2)',marginRight:'4px'}}>{label}:</span>}
+            {value}
+        </div>
+    );
+}
+
+// Deep factorization
+function DeepFactorization({n,label}){
+    const[depth,setDepth]=useState(0);
+    const[computed,setComputed]=useState({});
+    const[computing,setComputing]=useState(false);
+
+    const compute=useCallback((d)=>{
+        if(computed[d]||computing)return;
+        setComputing(true);
+        setTimeout(()=>{
+            const result=computeDeepFact(BigInt(n),d,0,new Map());
+            setComputed(prev=>({...prev,[d]:result}));
+            setDepth(d);
+            setComputing(false);
+        },10);
+    },[n,computed,computing]);
+
+    return(
+        <div>
+            <div className="depth-btns">
+                {[1,2,3,4].map(d=>(
+                    <button key={d} 
+                        className={`depth-btn ${depth===d?'active':''} ${computing?'computing':''}`}
+                        onClick={()=>compute(d)}
+                        disabled={computing}
+                    >
+                        D{d}
+                    </button>
+                ))}
+            </div>
+            {depth===0&&<div style={{color:'var(--tx2)',fontSize:'9px'}}>Select depth</div>}
+            {computed[depth]&&<DeepFactTree deep={computed[depth]}/>}
+        </div>
+    );
+}
+
+function computeDeepFact(n,maxDepth,depth,cache){
+    if(n<=1n)return{n,factors:[],factStr:'1',taggedStr:'1',children:[]};
+    const key=`${n}:${depth}`;
+    if(cache.has(key))return cache.get(key);
+    const factors=factorize(n);
+    const result={n,factors,factStr:fmtFact(factors),taggedStr:fmtFactTagged(factors),children:[]};
+    if(depth<maxDepth){
+        for(const f of factors){
+            if(f.p>256n&&f.pr){
+                const pm1=computeDeepFact(f.p-1n,maxDepth,depth+1,cache);
+                const pp1=computeDeepFact(f.p+1n,maxDepth,depth+1,cache);
+                result.children.push({prime:f.p,bits:f.p.toString(2).length,pm1,pp1});
+            }
+        }
+    }
+    cache.set(key,result);
+    return result;
+}
+
+function DeepFactTree({deep,depth=0}){
+    if(!deep)return null;
+    return(
+        <div style={{marginLeft:depth>0?10:0}}>
+            <div className="fact">{deep.taggedStr||deep.factStr}</div>
+            {deep.children&&deep.children.length>0&&(
+                <div className="fact-tree">
+                    {deep.children.map((child,i)=>(
+                        <div key={i} className="fact-item">
+                            <span className="prime">{child.prime.toString().length>20?`P${child.bits}b`:child.prime.toString()}</span>
+                            <span style={{color:'var(--tx2)',fontSize:'8px',marginLeft:'4px'}}>({child.bits}b)</span>
+                            <div style={{marginLeft:8,marginTop:2}}>
+                                <span style={{color:'var(--tx2)',fontSize:'8px'}}>−1 = </span>
+                                <span className="sub">{child.pm1?.taggedStr||child.pm1?.factStr||'1'}</span>
+                            </div>
+                            <div style={{marginLeft:8}}>
+                                <span style={{color:'var(--tx2)',fontSize:'8px'}}>+1 = </span>
+                                <span className="sub">{child.pp1?.taggedStr||child.pp1?.factStr||'1'}</span>
+                            </div>
+                            {child.pm1?.children?.length>0&&<DeepFactTree deep={child.pm1} depth={depth+1}/>}
+                            {child.pp1?.children?.length>0&&<DeepFactTree deep={child.pp1} depth={depth+1}/>}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Candidate Position Trace Panel
+function CandidateTracePanel({trace,kind,fmt,expandAll}){
+    const primeCount=trace.positions.filter(p=>p.prime).length;
+    const survivalPct=(primeCount/trace.positions.length*100).toFixed(1);
+    const copyVal = (n) => fmt==='dec' ? n.toString() : toHex(n);
+    
+    return(
+        <CollapsiblePanel title={`${kind} Kind Trace`} badge={`CC${trace.achievedLen}`} bc={trace.achievedLen>0?'bg-g':'bg-r'} forceOpen={expandAll||undefined}>
+            <div style={{fontSize:'9px',color:'var(--tx2)',marginBottom:'4px'}}>
+                Achieved: CC{trace.achievedLen} | Heat: {trace.heat.toFixed(4)} | Primes: {primeCount}/{trace.positions.length} ({survivalPct}%)
+            </div>
+            
+            {/* Survival bar */}
+            <div className="survival-bar">
+                {trace.positions.map((p,i)=>(
+                    <div key={i} className={`seg ${p.prime?'prime':'comp'}`} style={{width:`${100/trace.positions.length}%`}} title={`Pos ${p.pos}: ${p.prime?'PRIME':'composite'}`}/>
+                ))}
+            </div>
+            
+            <div className="chain-wrap">
+            <table className="ctbl">
+                <thead><tr>
+                    <th>Pos</th><th>Value</th><th className="num">Bits</th><th className="num">Pop</th>
+                    {RESIDUE_PRIMES.slice(0,6).map(q=><th key={q} style={{textAlign:'center'}}>%{q}</th>)}
+                    <th>Status</th>
+                </tr></thead>
+                <tbody>
+                {trace.positions.map((p,idx)=>{
+                    const rowCls=p.prime?'prime-row':'comp-row';
+                    return(<tr key={idx} className={`${rowCls} ${p.marker==='BREAK'?'breaker-row':''}`}>
+                        <td className="idx">{p.pos}</td>
+                        <td className="val" style={{cursor:'pointer'}} onClick={()=>navigator.clipboard.writeText(copyVal(p.val))} title="Click to copy">{fmtVal(p.val,fmt)}</td>
+                        <td className="num">{p.bits}</td>
+                        <td className="num">{p.hw}</td>
+                        {RESIDUE_PRIMES.slice(0,6).map(q=>{
+                            const r=p.residues[q];
+                            const isHit=!p.prime&&r===0;
+                            return<td key={q} className={`res ${isHit?'hit':''}`}>{r}</td>;
+                        })}
+                        <td>
+                            {p.prime?<span style={{color:'var(--green)'}}>✓ PRIME</span>
+                            :<span style={{color:'var(--red)'}}>
+                                {p.marker==='BREAK'?'◀ ':''}÷{p.hitQ||p.hint?.toString()||'?'}
+                            </span>}
+                        </td>
+                    </tr>);
+                })}
+                </tbody>
+            </table>
+            </div>
+        </CollapsiblePanel>
+    );
+}
+
+function ChainPanel({cc,fmt,inputVal,label,color,kind,expandAll}){
+    const[showGrid,setShowGrid]=useState(false);
+    const[showAlgebraic,setShowAlgebraic]=useState(false);
+    if(!cc||cc.len<1)return null;
+    const hasBrk=!!cc.brk;
+    const root=cc.members[0]?.val;
+    
+    // Respect expandAll
+    const gridOpen = expandAll || showGrid;
+    const algebraOpen = expandAll || showAlgebraic;
+    
+    // Format value for copying based on current format
+    const copyVal = (n) => fmt==='dec' ? n.toString() : toHex(n);
+
+    return(
+        <CollapsiblePanel title={label} badge={`CC${cc.len}`} bc={color} forceOpen={expandAll||undefined}>
+            <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'4px',fontSize:'9px',color:'var(--tx2)'}}>
+                <span>k=<span className="mono">{fmtHexShort(cc.k,24)}</span> ({cc.kBits}b)</span>
+                <span>exp={cc.exp}</span>
+                <span>input@#{cc.pos}</span>
+                <span>heat={cc.heat.toFixed(3)}</span>
+                <span>immune: <span style={{color:'var(--green)'}}>{cc.immunePrimes?.length?cc.immunePrimes.join(','):'none'}</span></span>
+            </div>
+            <div style={{fontSize:'9px',color:'var(--tx2)',marginBottom:'4px'}}>k = {cc.kFact}</div>
+
+            <div style={{display:'flex',gap:'4px',marginBottom:'4px'}}>
+                <button onClick={()=>setShowGrid(!showGrid)} className={`depth-btn ${gridOpen?'active':''}`}>{gridOpen?'Hide Grid':'Grid'}</button>
+                <button onClick={()=>setShowAlgebraic(!showAlgebraic)} className={`depth-btn ${algebraOpen?'active':''}`}>{algebraOpen?'Hide Algebra':'Algebra'}</button>
+            </div>
+
+            {algebraOpen&&(
+                <div className="algebraic">
+                    <CopyBox value={toHex(root)} label="Root (hex)"/>
+                    <CopyBox value={root.toString()} label="Root (dec)"/>
+                    <div style={{marginTop:'4px'}}>Formula: <code>p_i = 2^i · (p{kind==='first'?'+':'-'}1) {kind==='first'?'−':'+'} 1</code></div>
+                </div>
+            )}
+
+            {gridOpen&&(
+                <div style={{background:'var(--bg3)',padding:'4px 6px',borderRadius:'3px',marginBottom:'4px',maxHeight:'160px',overflowY:'auto',fontSize:'9px'}}>
+                    {cc.members.map((m,i)=>(
+                        <div key={i} style={{display:'flex',gap:'8px',alignItems:'center',marginBottom:'2px'}}>
+                            <span style={{color:'var(--blue)',width:'20px',flexShrink:0}}>{m.i-1}</span>
+                            <span style={{color:'var(--tx2)',width:'50px',flexShrink:0}}>row {m.gridRow}</span>
+                            <div style={{flex:1,minWidth:0}}>
+                                <CopyBox value={toHex(m.gridCol)} label="col"/>
+                            </div>
+                            {m.isInput&&<span style={{color:'var(--green)',flexShrink:0}}>◄</span>}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="chain-wrap">
+            <table className="ctbl">
+                <thead><tr>
+                    <th>#</th><th>Value</th><th className="num">Bits</th><th className="num">Pop</th>
+                    {RESIDUE_PRIMES.map(q=><th key={q} style={{textAlign:'center'}}>%{q}</th>)}
+                    <th>Status</th>
+                </tr></thead>
+                <tbody>
+                {cc.members.map((m,idx)=>{
+                    const cls=m.isInput?'input-row':'';
+                    return(<tr key={idx} className={cls}>
+                        <td className="idx">{m.i}</td>
+                        <td className="val" style={{cursor:'pointer'}} onClick={()=>navigator.clipboard.writeText(copyVal(m.val))} title="Click to copy">{fmtVal(m.val,fmt)}</td>
+                        <td className="num">{m.bits}</td>
+                        <td className="num">{m.hw}</td>
+                        {RESIDUE_PRIMES.map(q=>{
+                            const r=m.residues[q];
+                            const imm=cc.shadow?.find(s=>s.q===q)?.immune;
+                            return<td key={q} className={`res ${imm?'immune':''}`}>{r}</td>;
+                        })}
+                        <td><span style={{color:'var(--green)'}}>✓</span>{m.isInput&&<span style={{color:'var(--green)',marginLeft:'2px',fontSize:'8px'}}>◄</span>}</td>
+                    </tr>);
+                })}
+                {hasBrk&&(
+                    <tr className="breaker-row">
+                        <td className="idx" style={{color:'var(--red)'}}>✗</td>
+                        <td className="val" style={{cursor:'pointer'}} onClick={()=>navigator.clipboard.writeText(copyVal(cc.brk.val))} title="Click to copy">{fmtVal(cc.brk.val,fmt)}</td>
+                        <td className="num">{cc.brk.bits}</td>
+                        <td className="num">{cc.brk.hw}</td>
+                        {RESIDUE_PRIMES.map(q=>{
+                            const r=cc.brk.residues[q];
+                            return<td key={q} className={`res ${r===0?'hit':''}`}>{r}</td>;
+                        })}
+                        <td><span style={{color:'var(--red)'}}>÷{cc.brk.smallest?.toString()}</span></td>
+                    </tr>
+                )}
+                </tbody>
+            </table>
+            </div>
+
+            <CollapsiblePanel title={`Shadow (${cc.shadow.filter(s=>s.immune).length} immune)`} defaultOpen={false} forceOpen={expandAll||undefined}>
+                <div className="shadow-grid">
+                    {cc.shadow.slice(0,20).map(s=>(
+                        <div key={s.q} className={`shadow-item ${s.immune?'immune':''}`}>
+                            <span className="sq">q={s.q}</span> <span className="sr">r≡{s.r}</span>
+                            {s.immune?<span style={{color:'var(--green)',fontSize:'7px'}}> ✓</span>
+                            :s.killPos!==null?<span className="sf"> @{s.killPos}</span>:null}
+                        </div>
+                    ))}
+                </div>
+            </CollapsiblePanel>
+        </CollapsiblePanel>
+    );
+}
+
+function SpinePanel({n,expandAll}){
+    const[data,setData]=useState(null);
+    
+    // Auto-compute when expandAll is true
+    useEffect(()=>{
+        if(expandAll&&!data){
+            setData(spineExplore(BigInt(n)));
+        }
+    },[expandAll,n,data]);
+    
+    if(!data)return<div className="depth-btns"><button className="depth-btn" onClick={()=>setData(spineExplore(BigInt(n)))}>Compute Spine</button></div>;
+    return(
+        <div style={{fontSize:'9px'}}>
+            <CopyBox value={toHex(data.core)} label="Odd core"/>
+            <div style={{marginTop:'4px',color:'var(--tx2)'}}>Vertical (core × 2^i):</div>
+            {data.results.filter(r=>r.type==='vertical').slice(0,5).map((r,i)=>(
+                <div key={i} className={`spine-row ${r.prime?'prime':''}`}>
+                    <span className="lbl">2^{r.shift}</span>
+                    <span className="val">{r.bits}b {r.prime?'PRIME':''}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function GridNeighborsPanel({n,expandAll}){
+    const[data,setData]=useState(null);
+    
+    // Auto-compute when expandAll is true
+    useEffect(()=>{
+        if(expandAll&&!data){
+            setData(gridNeighbors(BigInt(n),8));
+        }
+    },[expandAll,n,data]);
+    
+    if(!data)return<div className="depth-btns"><button className="depth-btn" onClick={()=>setData(gridNeighbors(BigInt(n),8))}>Compute</button></div>;
+    return(
+        <div style={{fontSize:'9px',maxHeight:'140px',overflowY:'auto'}}>
+            {data.neighbors.map((nb,i)=>(
+                <div key={i} style={{display:'flex',gap:'6px',padding:'1px 0',background:nb.isRoot?'rgba(52,211,153,.1)':'transparent'}}>
+                    <span style={{color:'var(--tx2)',width:'28px'}}>{nb.delta>=0?'+':''}{nb.delta}</span>
+                    <span style={{color:nb.prime?'var(--green)':'var(--tx2)',width:'45px'}}>{nb.prime?`PRIME`:''}</span>
+                    <span style={{color:'var(--cyan)'}}>{nb.ccLen>1?`CC${nb.ccLen}`:''}</span>
+                    {nb.isRoot&&<span style={{color:'var(--green)'}}>◄</span>}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function App(){
+    // Initialize from URL params
+    const urlParams = getUrlParams();
+    const[input,setInput]=useState(urlParams.n || '0x3007D09C969E63D7E80A777');
+    const[targetCC,setTargetCC]=useState(urlParams.target || 16);
+    const[res,setRes]=useState(null);
+    const[fmt,setFmt]=useState(urlParams.fmt || 'hex');
+    const[loading,setLoading]=useState(false);
+    const[err,setErr]=useState(null);
+    const[expandAll,setExpandAll]=useState(false);
+    const[showShare,setShowShare]=useState(false);
+    const[copied,setCopied]=useState('');
+
+    // Auto-analyze if URL has params
+    useEffect(()=>{
+        if(urlParams.n){
+            // Trigger analysis after a brief delay
+            const timer = setTimeout(()=>{
+                const params = getUrlParams();
+                if(params.n){
+                    try{
+                        const n = parseInput(params.n);
+                        if(n<2n)return;
+                        const result = analyze(n,params.target||16);
+                        result.inputExpr = formatInputExpression(params.n);
+                        setRes(result);
+                    }catch(e){}
+                }
+            }, 100);
+            return ()=>clearTimeout(timer);
+        }
+    }, []); // Run only once on mount
+
+    const go=useCallback(()=>{
+        setLoading(true);setErr(null);setExpandAll(false);
+        setTimeout(()=>{
+            try{
+                const n = parseInput(input);
+                if(n<2n)throw new Error('Must be ≥ 2');
+                const result = analyze(n,targetCC);
+                // Store original expression if primorial
+                result.inputExpr = formatInputExpression(input);
+                setRes(result);
+                updateUrl(input, targetCC, fmt);
+            }catch(e){setErr(e.message);setRes(null);}
+            setLoading(false);
+        },20);
+    },[input,targetCC,fmt]);
+
+    const handleShare=()=>{
+        const link = generateShareLink(input, targetCC, fmt);
+        navigator.clipboard.writeText(link);
+        setCopied('link');
+        setTimeout(()=>setCopied(''),2000);
+    };
+
+    const handleExport=()=>{
+        if(!res)return;
+        const text = generateExport(res);
+        navigator.clipboard.writeText(text);
+        setCopied('export');
+        setTimeout(()=>setCopied(''),2000);
+    };
+
+    const examples=[
+        {l:'CC16',v:'0x3007D09C969E63D7E80A777'},
+        {l:'CC16*',v:'775966431281979185226148169'},  // near-miss CC18 (pos 17 prime!)
+        {l:'CC15',v:'0xcd927cc0f3ec7a2d71ae53b'},
+        {l:'CC13',v:'0x364BA36660F532CFACAA9231'},
+        {l:'CC9',v:'0x20000000000000000fcc6b3bbe2ab1967e50651d7'},
+        {l:'Primorial',v:'0x13A6AB194E6A97129309DDB2E709'},
+    ];
+
+    return(
+        <div className="app">
+            <div className="topbar">
+                <h1>⛓ CC Analyzer v13</h1>
+                <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="0x..., decimal, or k*p#*m (primorial)"/>
+                <button className="btn btn-go" onClick={go}>Analyze</button>
+                <div className="examples">{examples.map((e,i)=><button key={i} className="ex-btn" onClick={()=>setInput(e.v)}>{e.l}</button>)}</div>
+                <select value={fmt} onChange={e=>{setFmt(e.target.value);if(res)updateUrl(input,targetCC,e.target.value);}} style={{background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--tx0)',padding:'4px',borderRadius:'3px',fontSize:'10px'}}>
+                    <option value="hex">HEX</option><option value="dec">DEC</option><option value="bin">BIN</option>
+                </select>
+                {res&&<button className="btn btn-expand" onClick={()=>setExpandAll(!expandAll)}>{expandAll?'Collapse':'Expand All'}</button>}
+            </div>
+
+            {/* Target CC selector */}
+            <div className="target-row">
+                <label>Target CC Length:</label>
+                <select value={targetCC} onChange={e=>{const newTarget=Number(e.target.value);setTargetCC(newTarget);if(res){setRes(analyze(res.n,newTarget));updateUrl(input,newTarget,fmt);}}}>
+                    {[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,26,28,30,32].map(t=><option key={t} value={t}>CC{t}</option>)}
+                </select>
+                <span className="info">Analyze positions 0 to {targetCC} as if input is CC{targetCC} candidate</span>
+            </div>
+
+            {err&&<div className="err">{err}</div>}
+            {loading&&<div className="loading">Analyzing…</div>}
+
+            {res&&!loading&&(<>
+                {/* BIG CC SUMMARY BANNER */}
+                <div style={{display:'flex',gap:'16px',padding:'10px 16px',background:'var(--bg2)',borderRadius:'6px',marginBottom:'10px',alignItems:'center',flexWrap:'wrap',border:'1px solid var(--border)'}}>
+                    <div style={{fontSize:'11px',color:'var(--tx2)'}}>Result:</div>
+                    <div style={{display:'flex',alignItems:'baseline',gap:'4px'}}>
+                        <span style={{fontSize:'24px',fontWeight:700,color:res.candTrace1.achievedLen>=10?'var(--green)':res.candTrace1.achievedLen>=5?'var(--yellow)':'var(--tx1)'}}>
+                            CC{res.candTrace1.achievedLen}
+                        </span>
+                        <span style={{fontSize:'10px',color:'var(--tx2)'}}>1st</span>
+                    </div>
+                    <div style={{display:'flex',alignItems:'baseline',gap:'4px'}}>
+                        <span style={{fontSize:'24px',fontWeight:700,color:res.candTrace2.achievedLen>=10?'var(--purple)':res.candTrace2.achievedLen>=5?'var(--yellow)':'var(--tx1)'}}>
+                            CC{res.candTrace2.achievedLen}
+                        </span>
+                        <span style={{fontSize:'10px',color:'var(--tx2)'}}>2nd</span>
+                    </div>
+                    {/* Bi-twin detection */}
+                    {res.candTrace1.achievedLen >= 2 && res.candTrace1.achievedLen === res.candTrace2.achievedLen && (
+                        <div style={{padding:'4px 10px',background:'linear-gradient(135deg, var(--green), var(--purple))',borderRadius:'4px',color:'#000',fontWeight:700,fontSize:'11px'}}>
+                            BI-TWIN CC{res.candTrace1.achievedLen}
+                        </div>
+                    )}
+                    <div style={{fontSize:'10px',color:'var(--tx2)'}}>
+                        {res.bits}b | {res.prm?<span style={{color:'var(--green)'}}>PRIME</span>:<span style={{color:'var(--red)'}}>COMPOSITE</span>}
+                    </div>
+                    <div style={{marginLeft:'auto',display:'flex',gap:'6px'}}>
+                        <button onClick={handleShare} className="btn-share" title="Copy share link">
+                            {copied==='link'?'✓ Copied!':'🔗 Share'}
+                        </button>
+                        <button onClick={handleExport} className="btn-share" title="Copy full analysis as text">
+                            {copied==='export'?'✓ Copied!':'📋 Export'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* OVERVIEW */}
+                <div className="grid4">
+                    <CollapsiblePanel title="Input" badge={res.prm?'PRIME':'COMPOSITE'} bc={res.prm?'bg-g':'bg-r'} forceOpen={expandAll||undefined}>
+                        {res.inputExpr&&(
+                            <div style={{background:'var(--bg3)',padding:'4px 6px',borderRadius:'3px',marginBottom:'4px',fontSize:'10px',color:'var(--yellow)'}}>
+                                <span style={{color:'var(--tx2)'}}>Expression: </span>{res.inputExpr}
+                            </div>
+                        )}
+                        <CopyBox value={toHex(res.n)} label="hex"/>
+                        <CopyBox value={res.n.toString()} label="dec"/>
+                        <P k="Bits" v={res.bits}/><P k="Digits" v={res.digits}/>
+                        {/* CC Summary */}
+                        <div style={{marginTop:'6px',padding:'4px 6px',background:'var(--bg3)',borderRadius:'4px',display:'flex',gap:'12px',flexWrap:'wrap',alignItems:'center'}}>
+                            <div style={{fontSize:'10px'}}>
+                                <span style={{color:'var(--tx2)'}}>1st: </span>
+                                <span style={{color:res.candTrace1.achievedLen>=6?'var(--green)':res.candTrace1.achievedLen>=3?'var(--yellow)':'var(--tx1)',fontWeight:700,fontSize:'12px'}}>
+                                    CC{res.candTrace1.achievedLen}
+                                </span>
+                            </div>
+                            <div style={{fontSize:'10px'}}>
+                                <span style={{color:'var(--tx2)'}}>2nd: </span>
+                                <span style={{color:res.candTrace2.achievedLen>=6?'var(--green)':res.candTrace2.achievedLen>=3?'var(--yellow)':'var(--tx1)',fontWeight:700,fontSize:'12px'}}>
+                                    CC{res.candTrace2.achievedLen}
+                                </span>
+                            </div>
+                            {res.candTrace1.achievedLen >= 2 && res.candTrace1.achievedLen === res.candTrace2.achievedLen && (
+                                <span style={{padding:'2px 6px',background:'linear-gradient(135deg, var(--green), var(--purple))',borderRadius:'3px',color:'#000',fontWeight:700,fontSize:'9px'}}>
+                                    BI-TWIN
+                                </span>
+                            )}
+                        </div>
+                        {!res.prm&&<div className="fact" style={{marginTop:'4px'}}>{res.factStr}</div>}
+                    </CollapsiblePanel>
+
+                    <CollapsiblePanel title="Geometry" badge="metrics" bc="bg-y" forceOpen={expandAll||undefined}>
+                        <P k="Popcount" v={`${res.hw} (${(res.hw/res.bits*100).toFixed(1)}%)`}/>
+                        <P k="NAF" v={`${res.nw}`}/>
+                        <P k="Trailing 1s" v={`${res.to}`}/>
+                        <P k="Transitions" v={res.transitions}/>
+                    </CollapsiblePanel>
+
+                    <CollapsiblePanel title="2-adic" badge="ν₂" bc="bg" forceOpen={expandAll||undefined}>
+                        <P k="ν₂(n−1)" v={res.v2pm1}/>
+                        <P k="ν₂(n+1)" v={res.v2pp1}/>
+                        <CopyBox value={toHex(res.oddPm1)} label="odd(n−1)"/>
+                        <CopyBox value={toHex(res.oddPp1)} label="odd(n+1)"/>
+                    </CollapsiblePanel>
+
+                    {res.prm&&res.cls&&(
+                        <CollapsiblePanel title="Type" badge={res.cls.length||'—'} bc="bg-p" forceOpen={expandAll||undefined}>
+                            {res.cls.length?<div className="tags">{res.cls.map((c,i)=><span key={i} className="tag">{c}</span>)}</div>
+                            :<span style={{color:'var(--tx2)',fontSize:'9px'}}>No special type</span>}
+                        </CollapsiblePanel>
+                    )}
+                </div>
+
+                {/* CANDIDATE TRACES - works for both prime and composite */}
+                <div className="section-title">⛓ Candidate Position Trace (target CC{targetCC})</div>
+                <div className="grid2">
+                    <CandidateTracePanel trace={res.candTrace1} kind="First" fmt={fmt} expandAll={expandAll}/>
+                    <CandidateTracePanel trace={res.candTrace2} kind="Second" fmt={fmt} expandAll={expandAll}/>
+                </div>
+
+                {/* FULL CHAINS (for primes only) */}
+                {res.prm&&(res.cc1||res.cc2)&&(
+                    <>
+                    <div className="section-title">⛓ Full Chains (from root)</div>
+                    {res.cc1&&<ChainPanel cc={res.cc1} fmt={fmt} inputVal={res.n} label="First Kind" color="bg-g" kind="first" expandAll={expandAll}/>}
+                    {res.cc2&&<ChainPanel cc={res.cc2} fmt={fmt} inputVal={res.n} label="Second Kind" color="bg-p" kind="second" expandAll={expandAll}/>}
+                    </>
+                )}
+
+                {/* STRUCTURE */}
+                <div className="section-title">Structure</div>
+                <div className="grid4">
+                    <CollapsiblePanel title="Motifs" badge="bits" bc="bg-y" defaultOpen={false} forceOpen={expandAll||undefined}>
+                        <P k="Prefix 8" v={res.prefix8} mono/>
+                        <P k="Prefix 16" v={res.prefix16} mono/>
+                        <P k="Tail 5" v={res.tail5} mono/>
+                        <P k="Tail 8" v={res.tail8} mono/>
+                    </CollapsiblePanel>
+
+                    <CollapsiblePanel title="Wheels" defaultOpen={false} forceOpen={expandAll||undefined}>
+                        <div className="resgrid">{res.wheels.map((w,i)=><div key={i} className="resitem"><span className="rm">mod {w.m}</span> <span className="rv">≡{w.r}</span></div>)}</div>
+                    </CollapsiblePanel>
+
+                    <CollapsiblePanel title="Spine" badge="2-adic" bc="bg" defaultOpen={false} forceOpen={expandAll||undefined}>
+                        <SpinePanel n={res.n} expandAll={expandAll}/>
+                    </CollapsiblePanel>
+
+                    <CollapsiblePanel title="Neighbors" badge="grid" bc="bg-y" defaultOpen={false} forceOpen={expandAll||undefined}>
+                        <GridNeighborsPanel n={res.n} expandAll={expandAll}/>
+                    </CollapsiblePanel>
+                </div>
+
+                {/* FACTORIZATION */}
+                <div className="section-title">Deep Factorization</div>
+                <div className="grid2">
+                    <CollapsiblePanel title="n−1" badge="depth" bc="bg-o" forceOpen={expandAll||undefined}>
+                        <DeepFactorization n={res.n-1n} label="n−1"/>
+                    </CollapsiblePanel>
+                    <CollapsiblePanel title="n+1" badge="depth" bc="bg-o" forceOpen={expandAll||undefined}>
+                        <DeepFactorization n={res.n+1n} label="n+1"/>
+                    </CollapsiblePanel>
+                </div>
+
+                <div className="grid3">
+                    <CollapsiblePanel title="31-Smooth" badge="split" bc="bg" defaultOpen={false} forceOpen={expandAll||undefined}>
+                        <P k="n−1 smooth" v={`${res.smoothPm1.smoothBits}b`}/>
+                        <P k="n−1 cofactor" v={`${res.smoothPm1.remBits}b`}/>
+                        <P k="n+1 smooth" v={`${res.smoothPp1.smoothBits}b`}/>
+                        <P k="n+1 cofactor" v={`${res.smoothPp1.remBits}b`}/>
+                    </CollapsiblePanel>
+
+                    {res.valuations&&(
+                        <CollapsiblePanel title="p-adic ν" badge="vals" bc="bg" defaultOpen={false} forceOpen={expandAll||undefined}>
+                            <table className="val-tbl">
+                                <thead><tr><th>q</th>{res.valuations.slice(0,8).map(v=><th key={v.q}>{v.q}</th>)}</tr></thead>
+                                <tbody>
+                                    <tr><td>n−1</td>{res.valuations.slice(0,8).map(v=><td key={v.q} className={v.vpm1>0?'hi':''}>{v.vpm1}</td>)}</tr>
+                                    <tr><td>n+1</td>{res.valuations.slice(0,8).map(v=><td key={v.q} className={v.vpp1>0?'hi':''}>{v.vpp1}</td>)}</tr>
+                                </tbody>
+                            </table>
+                        </CollapsiblePanel>
+                    )}
+
+                    {res.prm&&res.primorialSig&&(
+                        <CollapsiblePanel title="Primorial" badge={res.primorialSig.full?"23#":"∂"} bc={res.primorialSig.full?"bg-g":"bg-y"} defaultOpen={false} forceOpen={expandAll||undefined}>
+                            <P k="23#|(p+1)" v={res.primorialSig.full?"YES":"NO"}/>
+                            {!res.primorialSig.full&&<P k="Missing" v={res.primorialSig.missing.join(',')}/>}
+                        </CollapsiblePanel>
+                    )}
+                </div>
+            </>)}
+
+            {/* FOOTER */}
+            <div className="footer">
+                <div style={{marginBottom:'4px'}}>
+                    <strong style={{color:'var(--cyan)'}}>Cunningham Chain Analyzer v13</strong>
+                </div>
+                <div>
+                    © 2026 <a href="https://be.linkedin.com/in/nenadmicic" target="_blank">Nenad Mićić</a> & <a href="https://anthropic.com" target="_blank">Claude (Anthropic)</a>
+                </div>
+                <div style={{marginTop:'4px'}}>
+                    License: <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0</a> | 
+                    <a href="https://en.wikipedia.org/wiki/Cunningham_chain" target="_blank" style={{marginLeft:'8px'}}>What is a Cunningham Chain?</a>
+                </div>
+            </div>
+        </div>
+    );
+}
+ReactDOM.render(<App/>,document.getElementById('root'));
+</script>
+</body>
+</html>

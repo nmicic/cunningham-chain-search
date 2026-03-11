@@ -1,0 +1,23 @@
+{
+  "dataset": "cc10plus_roots_snapshot_2026-03-12",
+  "snapshot_date": "2026-03-12",
+  "description": "First-kind Cunningham chain roots (CC10+) from the NEW4 campaign",
+  "format": "CC<level> 0x<hex_root> <decimal_digits>",
+  "total_roots": 1773994,
+  "cc10plus_roots": 929574,
+  "bit_range": "59-153",
+  "primary_band": "89-91",
+  "counts": {
+    "CC10": 749024,
+    "CC11": 132580,
+    "CC12": 39138,
+    "CC13": 7226,
+    "CC14": 1323,
+    "CC15": 238,
+    "CC16": 44,
+    "CC17": 1
+  },
+  "sieve_target": 18,
+  "grid_modulus": 40755,
+  "release_asset": "cc10plus_roots_snapshot_2026-03-12.txt.gz"
+}

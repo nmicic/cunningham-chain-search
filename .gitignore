@@ -1,0 +1,15 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+*.pyo
+*.log
+node_modules/
+.release_assets/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
+*.swp
+*.swo

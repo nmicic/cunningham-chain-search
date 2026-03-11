@@ -1,0 +1,10 @@
+services:
+  cc-math:
+    build:
+      context: ..              # scripts/ dir — includes cc_lib_v10.gp
+      dockerfile: mcp/Dockerfile
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - MCP_PORT=3000
