@@ -1,5 +1,9 @@
 # CC18: Cunningham Chain Search Engine
 
+> **Update (March 14, 2026):** Just days after publishing this repository, the pipeline reached its original target. The first known Cunningham chain of the first kind of length 18 was found, starting with the prime `106103983461039119546815109`.
+>
+> The text below is the original public release README from March 11, kept largely intact as the baseline snapshot.
+
 A visualization-driven project that grew into a high-throughput GPU/CPU pipeline for searching long Cunningham chains (first-kind). More about HPC optimization and AI-assisted iteration than the math itself.
 
 ## Results
