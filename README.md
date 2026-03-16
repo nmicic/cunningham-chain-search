@@ -93,6 +93,7 @@ See [`gp/HOWTO_cc_lib_v10.md`](gp/HOWTO_cc_lib_v10.md) for usage.
 - [Cunningham chain tables (pzktupel.de)](https://www.pzktupel.de/CC/cc.php)
 - [CC16 history](https://www.pzktupel.de/CC/HCC16.php)
 - [CC17 history](https://www.pzktupel.de/CC/HCC17.php)
+- [CC18 history](https://www.pzktupel.de/CC/HCC18.php)
 
 ## Author
 
