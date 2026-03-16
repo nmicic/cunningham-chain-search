@@ -89,10 +89,7 @@
         .resitem .rm { color: var(--tx2); }
         .resitem .rv { color: var(--cyan); font-weight: 600; }
 
-        .chain-wrap { max-height: 350px; overflow-y: auto; }
-        .chain-wrap::-webkit-scrollbar { width: 4px; }
-        .chain-wrap::-webkit-scrollbar-track { background: var(--bg1); }
-        .chain-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .chain-wrap { overflow-x: auto; }
         .ctbl { width: 100%; border-collapse: collapse; font-size: 10px; }
         .ctbl th { background: var(--bg3); padding: 2px 3px; text-align: left; color: var(--tx2); font-weight: 600; font-size: 9px; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; }
         .ctbl td { padding: 2px 3px; border-bottom: 1px solid var(--bg2); vertical-align: middle; }
@@ -1031,7 +1028,7 @@ function GridNeighborsPanel({n,expandAll}){
 function App(){
     // Initialize from URL params
     const urlParams = getUrlParams();
-    const[input,setInput]=useState(urlParams.n || '0x3007D09C969E63D7E80A777');
+    const[input,setInput]=useState(urlParams.n || '');
     const[targetCC,setTargetCC]=useState(urlParams.target || 16);
     const[res,setRes]=useState(null);
     const[fmt,setFmt]=useState(urlParams.fmt || 'hex');
@@ -1093,8 +1090,8 @@ function App(){
     };
 
     const examples=[
-        {l:'CC16',v:'0x3007D09C969E63D7E80A777'},
-        {l:'CC16*',v:'775966431281979185226148169'},  // near-miss CC18 (pos 17 prime!)
+        {l:'CC18',v:'0xB149165114F43BF4F72249'},
+        {l:'Ghost 21',v:'0xBB1AB1B60B7A5FFE9B9317',t:22},  // near-miss: ghost chain length 21
         {l:'CC15',v:'0xcd927cc0f3ec7a2d71ae53b'},
         {l:'CC13',v:'0x364BA36660F532CFACAA9231'},
         {l:'CC9',v:'0x20000000000000000fcc6b3bbe2ab1967e50651d7'},
@@ -1107,7 +1104,7 @@ function App(){
                 <h1>⛓ CC Analyzer v13</h1>
                 <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()} placeholder="0x..., decimal, or k*p#*m (primorial)"/>
                 <button className="btn btn-go" onClick={go}>Analyze</button>
-                <div className="examples">{examples.map((e,i)=><button key={i} className="ex-btn" onClick={()=>setInput(e.v)}>{e.l}</button>)}</div>
+                <div className="examples">{examples.map((e,i)=><button key={i} className="ex-btn" onClick={()=>{setInput(e.v);if(e.t)setTargetCC(e.t);}}>{e.l}</button>)}</div>
                 <select value={fmt} onChange={e=>{setFmt(e.target.value);if(res)updateUrl(input,targetCC,e.target.value);}} style={{background:'var(--bg2)',border:'1px solid var(--border)',color:'var(--tx0)',padding:'4px',borderRadius:'3px',fontSize:'10px'}}>
                     <option value="hex">HEX</option><option value="dec">DEC</option><option value="bin">BIN</option>
                 </select>
