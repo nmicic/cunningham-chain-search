@@ -1,8 +1,8 @@
 # CC18: Cunningham Chain Search Engine
 
-> **Update (March 14–16, 2026):** Just days after publishing this repository, the pipeline reached its original target. The first known Cunningham chain of the first kind of length 18 was found, starting with the prime `106103983461039119546815109`. A second first-kind CC18 was found shortly afterward, starting with `214325014495971624590189129`.
+> **Update (March 14–17, 2026):** Just days after publishing this repository, continued runs found two additional first-kind CC18s, starting with `106103983461039119546815109` and `214325014495971624590189129`. A later prior-art review showed that first-kind CC18 had already been documented in John Armitage's 2021 Oxford thesis, so these are additional campaign discoveries rather than the first known examples. The campaign has now finished because my available GPU compute time ran out.
 >
-> The text below is the original public release README from March 11, kept largely intact as the baseline snapshot. The March 11 dataset and release counts are unchanged here and do not yet include the later CC18 findings.
+> The text below is the original public release README from March 11, kept largely intact as the baseline snapshot. The March 11 dataset and release counts are unchanged here and do not include the later CC18 findings.
 
 A visualization-driven project that grew into a high-throughput GPU/CPU pipeline for searching long Cunningham chains (first-kind). More about HPC optimization and AI-assisted iteration than the math itself.
 
@@ -10,10 +10,9 @@ A visualization-driven project that grew into a high-throughput GPU/CPU pipeline
 
 As of March 2026, this project has contributed:
 - New CC16 and CC17 entries to the public [Cunningham chain tables](https://www.pzktupel.de/CC/cc.php)
-- The current smallest known second-kind CC17
-- The current largest known first-kind CC17
+- The current largest listed first-kind CC16 and CC17 entries on the public tables
 
-The original target (first-kind CC18 or CC19) has not yet been reached. This was compute-limited.
+The campaign ultimately did reach its CC18 target, but not the more ambitious CC19 goal. It remained compute-limited.
 
 The campaign dataset lives in a separate repo: [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data). Summary statistics and analysis CSVs are in [`data/`](data/) here; the full raw dataset (~30 MB, 929K CC10+ roots including 44 CC16 and a CC17) is available as a [release download](https://github.com/nmicic/cunningham-chain-data/releases/tag/v2026-03-12-snapshot).
 
