@@ -3300,9 +3300,13 @@ int main(int argc, char** argv) {
     /* Get GPU info */
     cudaDeviceProp prop;
     CUDA_CHECK(cudaGetDeviceProperties(&prop, gpu_id));
+    /* clockRate removed from cudaDeviceProp in CUDA 13; query via attribute */
+    int clock_khz = 0;
+    cudaDeviceGetAttribute(&clock_khz, cudaDevAttrClockRate, gpu_id);
+    double gpu_mhz = clock_khz / 1000.0;
     printf("GPU: %s (%d SMs, %.0f MHz, %.1f GB)\n",
            prop.name, prop.multiProcessorCount,
-           prop.clockRate / 1000.0,
+           gpu_mhz,
            prop.totalGlobalMem / (1024.0 * 1024.0 * 1024.0));
     printf("  L2 cache: %d KB, max threads/SM: %d\n",
            prop.l2CacheSize / 1024, prop.maxThreadsPerMultiProcessor);
