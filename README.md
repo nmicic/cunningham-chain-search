@@ -14,6 +14,8 @@ As of March 2026, this project has contributed:
 
 The campaign ultimately did reach its CC18 target, but not the more ambitious CC19 goal. It remained compute-limited.
 
+For future searches, this code is more efficient at higher target/depth settings (for example CC19-oriented runs) than in the CC18-oriented configuration used here, because stricter filtering reduces survivor pressure on the downstream confirmation path.
+
 The campaign dataset lives in a separate repo: [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data). Summary statistics and analysis CSVs are in [`data/`](data/) here; the full raw dataset (~30 MB, 929K CC10+ roots including 44 CC16 and a CC17) is available as a [release download](https://github.com/nmicic/cunningham-chain-data/releases/tag/v2026-03-12-snapshot).
 
 ## Quick Links
