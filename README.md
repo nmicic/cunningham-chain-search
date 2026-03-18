@@ -38,7 +38,7 @@ The campaign dataset lives in a separate repo: [cunningham-chain-data](https://g
 
 High-level staged pipeline:
 1. **Search lattice**: enumerate CRT-surviving bases and wheel positions on the published first-kind lattice.
-2. **GPU filter** (CUDA): three-stage modular depth filtering at 57-65 billion candidates/sec (RTX 4090 / RTX 5090). Rejects 99.9988% of candidates.
+2. **GPU filter** (CUDA): three-stage modular depth filtering at 57-65 billion candidates/sec (public v13 baseline on RTX 4090 / RTX 5090). Rejects 99.9988% of candidates. Experimental CUDA branch [`src/cuda/cc18_filter_cuda_CpC_v15.cu`](src/cuda/cc18_filter_cuda_CpC_v15.cu) has reached roughly 96-98B candidates/sec on RTX 5090 in some CC19-style runs, but it still needs more validation before replacing the public baseline.
 3. **CPU confirmation** (GMP): probable-prime testing, true-root recovery for non-roots, and full chain-length confirmation on the 0.0012% that survive.
 
 See [`docs/SEARCH_PIPELINE.md`](docs/SEARCH_PIPELINE.md) for details.
