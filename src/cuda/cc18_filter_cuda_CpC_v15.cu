@@ -41,8 +41,8 @@
  *         can compute the top chain position directly.
  *   [NEW] gpu_u128_shl_n(): left-shift by N bits for computing chain position
  *         values: chain[pos] = n * 2^pos + (2^pos - 1).
- *   [NEW] --prove-order forward|reverse: select prove direction (default: reverse).
- *         Forward mode restores v13 behavior for A/B benchmarking.
+ *   [NEW] --prove-order forward|reverse: select prove direction.
+ *         v15 defaults to forward (v13 compat); use --prove-order reverse for v14 mode.
  *
  * CHANGELOG (v13 over v12):
  *   [OPT] L1 cache preference: cudaFuncSetCacheConfig(PreferL1) — Blackwell only
@@ -470,8 +470,8 @@ static int    g_checkpoint_interval = 60;     /* Seconds between checkpoint save
 #define COVERAGE_FULL    1   /* All CRT-surviving bases, ~36 bases */
 static int g_coverage_mode = COVERAGE_FULL;   /* Default: full coverage */
 
-/* Prove order (v14) */
-static int g_prove_forward = 0;      /* 0 = reverse (v14 default), 1 = forward (v13) */
+/* Prove order — default forward for v13 backward compat; use --prove-order reverse for v14 mode */
+static int g_prove_forward = 1;      /* 1 = forward (default, v13 compat), 0 = reverse (v14) */
 static int g_target_len = 18;        /* target chain length for reverse-depth */
 
 /* Verify-root mode (v10) */
@@ -3426,7 +3426,7 @@ int main(int argc, char** argv) {
             printf("  --batch N          Tiles per GPU batch (default: 16384)\n");
             printf("  --cpu-prove        Use CPU proving (v4 fallback)\n");
             printf("  --prove-threads N  CPU prover threads (implies --cpu-prove, default: 16)\n");
-            printf("  --prove-order X    'reverse' (default, top-down) or 'forward' (v13 compat)\n");
+            printf("  --prove-order X    'forward' (default, v13 compat) or 'reverse' (top-down, faster)\n");
             printf("  --time N           Max runtime in seconds (graceful stop, 0 = unlimited)\n");
             printf("  --seed N           Explicit PRNG seed (u64, for reproducible runs)\n");
             printf("\n  Coverage options (v10):\n");
@@ -3549,7 +3549,7 @@ int main(int argc, char** argv) {
            g_coverage_mode == COVERAGE_FULL ? "FULL (all CRT bases)" : "LEGACY (r%%6==5 only)",
            h_num_bases);
     printf("  Prove mode: %s\n", cpu_prove ? "CPU (persistent pool)" : "GPU (20-witness MR)");
-    printf("  Prove order: %s (v14 base)\n", g_prove_forward ? "forward (v13 compat)" : "REVERSE (top-down)");
+    printf("  Prove order: %s\n", g_prove_forward ? "FORWARD (v13 default)" : "REVERSE (top-down, v14)");
     printf("  Status: experimental throughput branch; validate against CPU/GMP on key runs\n");
     if (cpu_prove) printf("  Prove threads: %d\n", g_num_prove_threads);
     if (max_time > 0) printf("  Time limit: %d seconds\n", max_time);
