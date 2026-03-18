@@ -169,11 +169,14 @@ The released code reflects the campaign version used to generate the published s
 
 Some later or alternate optimizations were explored separately. One example is a reverse-check proving path (`cc18_filter_cuda_CpC_v14.cu`), which can reduce CPU prover work by checking from higher chain positions inward, leveraging lower prime density in the outer shells. That path was not used for the published snapshot because the forward path was better suited for logging, inspection, and post-campaign analysis.
 
+Another later branch is the experimental throughput-focused `cc18_filter_cuda_CpC_v15.cu`. It keeps the same three-stage filter structure, but changes the hot path with more cache-friendly data layouts: interleaved `kmod` tables for the L2 and ext-L2 stages, constant-memory ext-L2 bitmasks, packed line-sieve kill masks, and cooperative per-prime residue setup inside the filter kernel. On Blackwell / RTX 5090 hardware, this branch has reached roughly `96-98 B candidates/sec` in some CC19-style runs, but it should still be treated as an optimization track rather than the published reference baseline.
+
 ## Performance
 
 | Metric | Value |
 |--------|-------|
 | GPU throughput | 57-65 B candidates/sec |
+| Experimental v15 throughput | ~96-98 B candidates/sec on RTX 5090 in some CC19-style runs |
 | GPU survivor rate | 0.0012% |
 | GPU rejection rate | 99.9988% |
 | Primary search band | 89-91 bit |
