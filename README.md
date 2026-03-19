@@ -1,5 +1,7 @@
 # CC18: Cunningham Chain Search Engine
 
+> **Update (March 19, 2026):** A second cumulative dataset release is now available in the separate [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data) repo as [v2026-03-19-snapshot](https://github.com/nmicic/cunningham-chain-data/releases/tag/v2026-03-19-snapshot). It contains 1,551,489 first-kind roots (CC10-CC18), including 2 CC18s. The `data/` and `analysis/` folders in this code repo remain the original published snapshot and are not regenerated for this release.
+>
 > **Update (March 14–17, 2026):** Just days after publishing this repository, continued runs found two first-kind CC18s, starting with `106103983461039119546815109` and `214325014495971624590189129`. A later prior-art review showed that first-kind CC18 had already been documented in John Armitage's 2021 Oxford thesis via the smallest known example, so these are not the first known CC18s. They do, however, remain the largest listed first-kind CC18 entries on the current public Cunningham tables. The campaign has now finished because my available GPU compute time ran out.
 >
 > The text below is the original public release README from March 11, kept largely intact as the baseline snapshot. The March 11 dataset and release counts are unchanged here and do not include the later CC18 findings.
