@@ -1,6 +1,6 @@
 # CC18: Cunningham Chain Search Engine
 
-> **Update (March 19, 2026):** A second cumulative dataset release is now available in the separate [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data) repo as [v2026-03-19-snapshot](https://github.com/nmicic/cunningham-chain-data/releases/tag/v2026-03-19-snapshot). It contains 1,551,489 first-kind roots (CC10-CC18), including 2 CC18s. The `data/` and `analysis/` folders in this code repo remain the original published snapshot and are not regenerated for this release.
+> **Update (March 19, 2026):** A second cumulative dataset release is now available in the separate [cunningham-chain-data](https://github.com/nmicic/cunningham-chain-data) repo as [v2026-03-19-snapshot](https://github.com/nmicic/cunningham-chain-data/releases/tag/v2026-03-19-snapshot). It contains 1,551,489 first-kind roots (CC10-CC18), including 2 CC18s. The `data/` and `analysis/` folders in this code repo remain the original published snapshot and are not regenerated for this release. This repo also now includes an experimental CPU variant based on John Armitage’s bit-vector L2 filter plus additional optimizations.
 >
 > **Update (March 14–17, 2026):** Just days after publishing this repository, continued runs found two first-kind CC18s, starting with `106103983461039119546815109` and `214325014495971624590189129`. A later prior-art review showed that first-kind CC18 had already been documented in John Armitage's 2021 Oxford thesis via the smallest known example, so these are not the first known CC18s. They do, however, remain the largest listed first-kind CC18 entries on the current public Cunningham tables. The campaign has now finished because my available GPU compute time ran out.
 >
@@ -41,7 +41,7 @@ The campaign dataset lives in a separate repo: [cunningham-chain-data](https://g
 High-level staged pipeline:
 1. **Search lattice**: enumerate CRT-surviving bases and wheel positions on the published first-kind lattice.
 2. **GPU filter** (CUDA): three-stage modular depth filtering at 57-65 billion candidates/sec (public v13 baseline on RTX 4090 / RTX 5090). Rejects 99.9988% of candidates. Experimental CUDA branch [`src/cuda/cc18_filter_cuda_CpC_v15.cu`](src/cuda/cc18_filter_cuda_CpC_v15.cu) has reached roughly 96-98B candidates/sec on RTX 5090 in some CC19-style runs, but it still needs more validation before replacing the public baseline.
-3. **CPU confirmation** (GMP): probable-prime testing, true-root recovery for non-roots, and full chain-length confirmation on the 0.0012% that survive.
+3. **CPU confirmation** (GMP): probable-prime testing, true-root recovery for non-roots, and full chain-length confirmation on the 0.0012% that survive. An experimental CPU variant (bit-vector L2 filter, v34) is being prepared for release alongside the legacy `cc_gmp_v33_03.c` baseline.
 
 See [`docs/SEARCH_PIPELINE.md`](docs/SEARCH_PIPELINE.md) for details.
 
