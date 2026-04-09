@@ -434,6 +434,7 @@ int g_wide_mode = 0;        /* Set at startup if bits+target > 127; uses GMP for
 int g_bitvec_enabled = 1;      /* Armitage bit-vector L2+ext-L2 filter (--no-bitvec to disable) */
 int g_ext2_enabled = 1;        /* OPT-G: super-ext-L2 bitmask 101-127 (--no-ext2 to disable) */
 int g_ext2_auto = 1;           /* Auto-disable OPT-G when bits < 107 (override with --ext2) */
+int g_prove_forward = 0;       /* 0=reverse (OPT-E, default), 1=forward (v13 compat, --prove-order forward) */
 static int g_target_bits_global = 89;
 static int g_target_length_global = 18;
 
@@ -2477,10 +2478,8 @@ void* __attribute__((hot)) worker_sequential(void* arg) {
                     }
 
                     /* OPT-E (wide-mode): Cascade reverse-prove via GMP.
-                     * Test top chain position before expensive chain-follow.
-                     * n_top = 2^top * (n + 1) - 1. If n_top is composite,
-                     * chain cannot reach log_threshold elements. */
-                    {
+                     * Disabled when --prove-order forward. */
+                    if (!g_prove_forward) {
                         int top = cfg->log_threshold - 1;
                         if (top > 0) {
                             mpz_add_ui(cfg->temp2, cfg->n, 1);
@@ -2648,16 +2647,8 @@ void* __attribute__((hot)) worker_sequential(void* arg) {
                     }
 
                     /* OPT-E: Cascade reverse-prove — test top position before chain follow.
-                     * Use log_threshold-1 as the top position: if position log_threshold-1
-                     * isn't prime, the chain can't reach log_threshold elements anyway.
-                     * Guard: top=0 when log_threshold=1 → OPT-E disabled (log everything).
-                     * When log_threshold=target, OPT-E works as intended (~98.6% filtered).
-                     *
-                     * Uses u128 arithmetic. n_top = (1 << top) * (root + 1) - 1 has
-                     * (bits + top) bits total. Dynamic guard ensures bits + top < 128
-                     * to prevent u128 overflow. In wide-mode (bits > 127), OPT-E is
-                     * handled by the GMP path above (lines ~2471-2483). */
-                    {
+                     * Disabled when --prove-order forward. */
+                    if (!g_prove_forward) {
                         int top = cfg->log_threshold - 1;
                         if (top > 0 && (g_target_bits_global + top) < 128) {
                             u128 n_top = ((u128)1 << top) * (n128 + 1) - 1;
@@ -2861,6 +2852,7 @@ static void print_usage(const char* prog) {
     printf("  --no-bitvec        Disable bit-vector L2+ext-L2 filter (fallback to v33 per-candidate mode)\n");
     printf("  --no-ext2          Disable OPT-G super-ext-L2 filter (faster sieve, more proving work)\n");
     printf("  --ext2             Force-enable OPT-G even at low bit sizes (overrides auto-tune)\n");
+    printf("  --prove-order X    'reverse' (default, OPT-E top-down) or 'forward' (v13 compat)\n");
     printf("  --test             Run unit tests\n");
     printf("\nv34-bit-vector-07: bit-vector L2+ext-L2 filter (B=64) + OPT-A/B/E/I/G/C on v33-03 base\n");
     printf("Precomputes 64-bit kill masks per (base,bucket,block) for 14 sieve primes.\n");
@@ -3334,6 +3326,12 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--no-bitvec")) g_bitvec_enabled = 0;
         else if (!strcmp(argv[i], "--no-ext2")) { g_ext2_enabled = 0; g_ext2_auto = 0; }
         else if (!strcmp(argv[i], "--ext2"))    { g_ext2_enabled = 1; g_ext2_auto = 0; }
+        else if (!strcmp(argv[i], "--prove-order") && i+1 < argc) {
+            i++;
+            if (!strcmp(argv[i], "forward")) g_prove_forward = 1;
+            else if (!strcmp(argv[i], "reverse")) g_prove_forward = 0;
+            else { fprintf(stderr, "ERROR: --prove-order must be 'forward' or 'reverse'\n"); return 1; }
+        }
         else if (!strcmp(argv[i], "--test")) { return run_unit_tests(); }
         else if (argv[i][0] == '-') {
             if (!strcmp(argv[i], "-t") && i+1 < argc) num_threads = atoi(argv[++i]);
@@ -3608,6 +3606,8 @@ int main(int argc, char** argv) {
                     target_bits, target_length, max_chain_bits);
         }
     }
+
+    QPRINTF("Prove order:    %s\n", g_prove_forward ? "FORWARD (no OPT-E)" : "REVERSE (OPT-E top-down)");
 
     /* OPT-G auto-tuning: disable super-ext-L2 at low bit sizes where sieve
      * speed dominates over proving cost. Crossover is around 107 bits.
