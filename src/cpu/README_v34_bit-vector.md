@@ -3,7 +3,8 @@
 Experimental CPU search engine for long first-kind Cunningham chains.
 Built on `cc_gmp_v33_03.c` with John Armitage's bit-vector L2 filter and a
 small set of additional optimizations. Intended use is high-bit CPU searches
-(notably 153-bit CC15+) where GPU wide-mode buffering can dominate.
+(notably 153-bit CC15+) where GPU wide-mode buffering makes GPU runs slower,
+so the CPU path can dominate.
 
 ## Build
 
