@@ -8,7 +8,7 @@ This folder contains the CPU/GMP search engines.
   Legacy baseline engine from the March 2026 public release. Use this as the
   reference implementation for correctness and comparisons.
 
-- `cc_gmp_v34_bit-vector_07_public.c`
+- `cc_gmp_v34_bit-vector_10.c`
   Experimental CPU engine based on John Armitage's bit-vector L2 filter plus
   additional optimizations. Tuned for high-bit searches (notably 153-bit CC15+)
   where GPU wide-mode buffering makes GPU runs slower, so the CPU path can

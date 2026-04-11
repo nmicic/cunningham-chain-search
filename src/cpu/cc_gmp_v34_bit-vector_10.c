@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * =============================================================================
- * Cunningham Chain Constructor — GMP v34-bit-vector-07
+ * Cunningham Chain Constructor — GMP v34-bit-vector-10
  * =============================================================================
  *
  * LINEAGE
@@ -16,6 +16,7 @@
  *           └─ v34_bit-vector_05.c: + OPT-I  (birth-certificate root detection)
  *             └─ v34_bit-vector_06.c: + OPT-G  (super-ext-L2 bitmask 101–127)
  *               └─ v34_bit-vector_07.c: + OPT-C  (packed L1-resident line-sieve kill table)
+ *                 └─ v34_bit-vector_10.c: + immediate file persistence, v15.cu signal handling
  *
  * CREDITS
  * -------
@@ -100,7 +101,7 @@
  *
  *
  * Build:
- *   gcc -O3 -march=native -flto -o cc_v34_bit-vector_07 cc_gmp_v34_bit-vector_07.c -lgmp -lpthread -lm
+ *   gcc -O3 -march=native -flto -o cc_v34_bit-vector_10 cc_gmp_v34_bit-vector_10.c -lgmp -lpthread -lm
  */
 
 #define _GNU_SOURCE
@@ -140,7 +141,7 @@ extern int g_quiet_mode;
  * LATTICE CONFIGURATION — Search profile only (CC18a)
  * ========================================================================== */
 #define PROFILE_NAME "cc18a-bitvec"
-#define PROFILE_BANNER "v34-bit-vector-07-CC18a"
+#define PROFILE_BANNER "v34-bit-vector-10-CC18a"
 #define PROFILE_CRT_DESC "CRT primes: 5, 7, 11, 13, 17, 19"
 #define PROFILE_L2_DESC "Bitmask: 37, 41, 43, 47, 53, 59, 61"
 #define CRT_PRIMES_COUNT 6
@@ -518,7 +519,19 @@ typedef struct {
 
 void signal_handler(int sig) {
     (void)sig;
-    shutdown_requested = 1;
+    if (!shutdown_requested) {
+        shutdown_requested = 1;
+        const char msg[] =
+            "\n[INTERRUPT] stopping after current batch (Ctrl+C again = force exit)\n";
+        ssize_t wr = write(STDERR_FILENO, msg, sizeof(msg) - 1);
+        (void)wr;
+        return;
+    }
+    /* Second interrupt: force exit */
+    const char msg[] = "\n[INTERRUPT] force exit\n";
+    ssize_t wr = write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    (void)wr;
+    _exit(130);
 }
 
 static void pin_thread_if_requested(int thread_id) {
@@ -575,22 +588,25 @@ static inline void queue_found_result(ThreadConfig* cfg, int length, int kind_un
     if (line != line_stack) free(line);
 }
 
+/* v10: Immediate persistence for ALL qualifying chains (CC >= log_threshold).
+ * Writes directly to log file with fflush — survives CTRL+C / timeout.
+ * Ported from v15.cu where every chain is fflush'd at point of discovery. */
+static void persist_chain_to_file(int length, const char* kind_str, const char* hex_root) {
+    if (!g_log_fp) return;
+    pthread_mutex_lock(&g_log_file_lock);
+    fprintf(g_log_fp, "CC%d%s 0x%s\n", length, kind_str, hex_root);
+    fflush(g_log_fp);
+    pthread_mutex_unlock(&g_log_file_lock);
+}
+
 /* FIX-4: Immediate persistence for critical chains (CC >= target).
- * Writes directly to log file with fflush, bypassing batch buffer.
  * Also writes to stderr as crash-safe backup (stderr is unbuffered). */
 static void persist_critical_chain(int length, const char* kind_str, const char* hex_root,
                                     int thread_id) {
     /* Always announce on stderr (unbuffered = crash-safe) */
     fprintf(stderr, "\n*** CRITICAL FIND: CC%d%s root=0x%s [T%d] ***\n",
             length, kind_str, hex_root, thread_id);
-
-    /* Write to log file immediately if available */
-    if (g_log_fp) {
-        pthread_mutex_lock(&g_log_file_lock);
-        fprintf(g_log_fp, "*** CC%d%s 0x%s (immediate)\n", length, kind_str, hex_root);
-        fflush(g_log_fp);
-        pthread_mutex_unlock(&g_log_file_lock);
-    }
+    /* File write handled by persist_chain_to_file() at call site */
 }
 
 static int g_max_results_warned = 0;  /* FIX-5: warn once on overflow */
@@ -2443,6 +2459,7 @@ void* __attribute__((hot)) worker_sequential(void* arg) {
                         if (full_len >= cfg->target_length) local_chains++;
                         if (full_len >= cfg->log_threshold) {
                             char *root_str = mpz_get_str(NULL, 16, cfg->root);
+                            persist_chain_to_file(full_len, "a", root_str);
                             if (full_len >= cfg->target_length)
                                 persist_critical_chain(full_len, "a", root_str, cfg->thread_id);
                             if (g_full_quiet_mode) {
@@ -2508,6 +2525,7 @@ void* __attribute__((hot)) worker_sequential(void* arg) {
 
                     if (length_w >= cfg->log_threshold) {
                         char *n_str = mpz_get_str(NULL, 16, cfg->n);
+                        persist_chain_to_file(length_w, "a", n_str);
                         if (length_w >= cfg->target_length)
                             persist_critical_chain(length_w, "a", n_str, cfg->thread_id);
                         if (g_full_quiet_mode) {
@@ -2607,6 +2625,7 @@ void* __attribute__((hot)) worker_sequential(void* arg) {
                         if (full_len >= cfg->target_length) local_chains++;
                         if (full_len >= cfg->log_threshold) {
                             char *root_str = mpz_get_str(NULL, 16, cfg->root);
+                            persist_chain_to_file(full_len, "a", root_str);
 
                             /* FIX-4: Immediate persistence for target-length chains */
                             if (full_len >= cfg->target_length) {
@@ -2675,6 +2694,7 @@ void* __attribute__((hot)) worker_sequential(void* arg) {
 
                     if (length >= cfg->log_threshold) {
                         char *n_str = mpz_get_str(NULL, 16, cfg->n);
+                        persist_chain_to_file(length, "a", n_str);
 
                         /* FIX-4: Immediate persistence for target-length chains */
                         if (length >= cfg->target_length) {
@@ -2854,7 +2874,7 @@ static void print_usage(const char* prog) {
     printf("  --ext2             Force-enable OPT-G even at low bit sizes (overrides auto-tune)\n");
     printf("  --prove-order X    'reverse' (default, OPT-E top-down) or 'forward' (v13 compat)\n");
     printf("  --test             Run unit tests\n");
-    printf("\nv34-bit-vector-07: bit-vector L2+ext-L2 filter (B=64) + OPT-A/B/E/I/G/C on v33-03 base\n");
+    printf("\nv34-bit-vector-10: bit-vector L2+ext-L2 filter (B=64) + OPT-A/B/E/I/G/C on v33-03 base\n");
     printf("Precomputes 64-bit kill masks per (base,bucket,block) for 14 sieve primes.\n");
     printf("Line-sieve checks chain positions 1..N for primes 101-863 before BPSW\n");
     printf("Searches >128-bit candidates work without truncation (GMP wide-mode)\n");
@@ -3374,14 +3394,25 @@ int main(int argc, char** argv) {
         if (g_chunk_tiles == 0) g_chunk_tiles = 500;
     }
 
-    signal(SIGINT, signal_handler);
-    signal(SIGTERM, signal_handler);
+    {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_handler = signal_handler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        sigaction(SIGINT, &sa, NULL);
+        sigaction(SIGTERM, &sa, NULL);
+    }
 
     g_log_fp = NULL;
     if (output_file) {
         g_log_fp = fopen(output_file, "a");
+        /* v10: no setvbuf — each chain is fflush'd immediately at discovery
+         * so results survive CTRL+C / timeout / kill. */
         if (g_log_fp) {
-            setvbuf(g_log_fp, NULL, _IOFBF, 1 << 20);
+            fprintf(g_log_fp, "# %s — target=CC%d bits=%d log>=%d started=%ld\n",
+                    PROFILE_BANNER, target_length, target_bits, log_threshold, (long)time(NULL));
+            fflush(g_log_fp);
         }
     }
     if (g_full_quiet_mode && !g_log_fp) {
@@ -3811,11 +3842,10 @@ int main(int argc, char** argv) {
                 (unsigned long long)g_results.prefilter_skipped,
                 (unsigned long long)g_results.chain_screen_saved,
                 (unsigned long long)g_results.chain_links_tested);
-        for (int i = 0; i < g_results.num_results; i++) {
-            fprintf(g_log_fp, "CC%da 0x%s\n", g_results.result_lengths[i],
-                   g_results.result_strings[i]);
-        }
-        fflush(g_log_fp);  /* FIX-9: flush before close to ensure all data persisted */
+        /* v10: chains already persisted immediately at discovery — no re-write needed.
+         * Write summary count only. */
+        fprintf(g_log_fp, "# Found: %d chains >= CC%d\n", g_results.num_results, log_threshold);
+        fflush(g_log_fp);
         fclose(g_log_fp);
         g_log_fp = NULL;
         QPRINTF("Results saved to: %s\n", output_file);

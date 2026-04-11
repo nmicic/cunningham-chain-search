@@ -1,4 +1,4 @@
-# cc_gmp_v34_bit-vector_07: CPU Cunningham Chain Search (Bit-Vector L2)
+# cc_gmp_v34_bit-vector_10: CPU Cunningham Chain Search (Bit-Vector L2)
 
 Experimental CPU search engine for long first-kind Cunningham chains.
 Built on `cc_gmp_v33_03.c` with John Armitage's bit-vector L2 filter and a
@@ -9,8 +9,8 @@ so the CPU path can dominate.
 ## Build
 
 ```bash
-gcc -O3 -march=native -flto -o cc_v34_bit-vector_07 \
-    cc_gmp_v34_bit-vector_07_public.c -lgmp -lpthread -lm
+gcc -O3 -march=native -flto -o cc_v34_bit-vector_10 \
+    cc_gmp_v34_bit-vector_10.c -lgmp -lpthread -lm
 ```
 
 Requires: GCC with `__builtin_ctzll`, GMP, pthreads.
@@ -19,18 +19,18 @@ Requires: GCC with `__builtin_ctzll`, GMP, pthreads.
 
 ```bash
 # Run self-tests
-./cc_v34_bit-vector_07 --test
+./cc_v34_bit-vector_10 --test
 
 # 153-bit CC15 search (intended use case)
-./cc_v34_bit-vector_07 --prefix 0b1 --sequential \
+./cc_v34_bit-vector_10 --prefix 0b1 --sequential \
     --bits 153 --target 15 --log 15 --threads 16
 
 # Sieve-only throughput (no proving)
-./cc_v34_bit-vector_07 --prefix 0b1 --sequential \
+./cc_v34_bit-vector_10 --prefix 0b1 --sequential \
     --bits 89 --target 13 --threads 4 --log 50000 --sieve-only
 
 # Baseline comparison (disable bit-vector filter)
-./cc_v34_bit-vector_07 --no-bitvec --prefix 0b1 --sequential \
+./cc_v34_bit-vector_10 --no-bitvec --prefix 0b1 --sequential \
     --bits 89 --target 13 --threads 4 --log 50000
 ```
 
@@ -64,7 +64,7 @@ Short summary of the effective changes:
 - OPT-C: packed L1 line-sieve kill table.
 
 The primary benchmark summary is included in the header of
-`cc_gmp_v34_bit-vector_07_public.c`.
+`cc_gmp_v34_bit-vector_10.c`.
 
 ## Correctness
 
