@@ -1,0 +1,20 @@
+# generated 2026-05-14 from ../data/cc10plus_roots_snapshot_2026-03-19.csv
+# via scripts/build_known_fingerprints_exp.py (predicate: count exponent of q in (p+1) for q in [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61])
+# variant D: freq >= 10 (drops singleton/rare-pair tail)
+# augmented with pinned sieve set {2, 3, 5} (--immune-prime 5)
+# format: P1[^e]*P2[^e]*... (^e omitted when e=1)
+# total scanned: 1551489 CC10-99 roots
+# raw unique exponent shapes: 28514
+# after freq >= 10 filter: 4248 pool entries
+# coverage of CC10+ data: 1501565/1551489 = 96.78%
+# D_V bit-range: min=12.07 max=36.84 span=24.77 bits
+2*3*5*11*13*19  # freq=271525 bits=16.31
+2*3^2*5*11*13*19  # freq=89509 bits=17.90
+2*3*5*7*11*13*19  # freq=74063 bits=19.12
+2*3*5^2*11*13*19  # freq=54311 bits=18.64
+2*3*5*11*13*17*19  # freq=34834 bits=20.40
+2*3^3*5*11*13*19  # freq=29859 bits=19.48
+2*3*5*11*13*19*29  # freq=28030 bits=21.17
+2*3^2*5*7*11*13*19  # freq=25123 bits=20.71
+2*3*5*11^2*13*19  # freq=24514 bits=19.77
+2*3*5*11*13*19*23  # freq=23591 bits=20.84

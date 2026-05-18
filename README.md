@@ -43,6 +43,8 @@ High-level staged pipeline:
 2. **GPU filter** (CUDA): three-stage modular depth filtering at 57-65 billion candidates/sec (public v13 baseline on RTX 4090 / RTX 5090). Rejects 99.9988% of candidates. Experimental CUDA branch [`src/cuda/cc18_filter_cuda_CpC_v15.cu`](src/cuda/cc18_filter_cuda_CpC_v15.cu) has reached roughly 96-98B candidates/sec on RTX 5090 in some CC19-style runs, but it still needs more validation before replacing the public baseline.
 3. **CPU confirmation** (GMP): probable-prime testing, true-root recovery for non-roots, and full chain-length confirmation on the 0.0012% that survive. An experimental CPU variant (bit-vector L2 filter, v34) is being prepared for release alongside the legacy `cc_gmp_v33_03.c` baseline.
 
+An additional experimental CUDA branch, [`src/cuda/experimental/`](src/cuda/experimental/) (v16), explores a different sampling strategy. Rather than filtering one fixed CRT shape per run (v13 / v15), it iterates Q-values across ~4,200 small-prime fingerprint shapes drawn from the **empirical distribution of real CC10+ chain roots** in [`cunningham-chain-data`](https://github.com/nmicic/cunningham-chain-data). Targets CC20/CC21 scale; the methodology is the contribution. See [`src/cuda/experimental/README.md`](src/cuda/experimental/README.md) and [`DESIGN.md`](src/cuda/experimental/DESIGN.md).
+
 See [`docs/SEARCH_PIPELINE.md`](docs/SEARCH_PIPELINE.md) for details.
 
 ## Interactive Visualizations
